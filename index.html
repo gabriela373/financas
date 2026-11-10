@@ -57,12 +57,12 @@ body.lock{align-items:center;justify-content:center}body.lock #lg{display:block}
 </head>
 <body class="lock">
 <div id="lg" role="dialog" aria-label="Entrar">
- <h2>Minhas Finanças</h2><div class="mu">Entre para acessar seus dados</div>
- <label for="lu">Usuário</label><input id="lu" autocomplete="username" autocapitalize="none">
+ <h2>Minhas Finanças</h2><div class="mu">Entre para acessar seus dados em qualquer aparelho</div>
+ <label for="lu">E-mail</label><input id="lu" type="email" autocomplete="username" autocapitalize="none" value="gabriela.ebrito20@gmail.com">
  <label for="lp" style="margin-top:12px">Senha</label><input id="lp" type="password" autocomplete="current-password">
- <label style="display:flex;gap:8px;align-items:center"><input id="lk" type="checkbox" checked style="width:auto;margin:0"> Manter conectado neste aparelho</label>
  <div id="er" aria-live="polite"></div>
  <button class="pri" onclick="login()">Entrar</button>
+ <button style="width:100%;margin-top:8px;border:0;background:none;color:var(--mu)" onclick="resetPw()">Esqueci a senha</button>
 </div>
 <aside>
  <b>Minhas Finanças</b>
@@ -70,13 +70,14 @@ body.lock{align-items:center;justify-content:center}body.lock #lg{display:block}
  <a onclick="openSet()">Ajustes e backup</a>
  <a onclick="openCard()">Novo cartão</a>
  <div style="flex:1"></div>
+ <div class="mu" id="sy" style="padding:0 4px"></div>
  <button onclick="toggleTheme()">Tema claro/escuro</button>
  <button onclick="logout()">Sair</button>
 </aside>
 <main>
  <div class="top">
   <button onclick="mv(-1)" aria-label="Mês anterior">‹</button><button onclick="mv(1)" aria-label="Próximo mês">›</button>
-  <h1 id="mo"></h1>
+  <h1 id="mo"></h1><span class="mu" id="sy2"></span>
   <button class="pri" onclick="openItem()">+ Lançar</button><button onclick="logout()" aria-label="Sair">Sair</button>
  </div>
  <div class="grid" id="g"></div>
@@ -113,7 +114,9 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const CATS={'Moradia':'#1e3a8a','Contas fixas':'#2563eb','Alimentação':'#f59e0b','Transporte':'#8b5cf6','Saúde':'#14b8a6','Lazer':'#ec4899','Cartão':'#64748b','Reserva':'#16a34a','Outros':'#94a3b8'};
 let S;try{S=JSON.parse(localStorage.getItem('fin'))}catch(e){}
 S=S||{salary:0,items:[],cards:[],paid:{},theme:'l'};
-const save=()=>{try{localStorage.setItem('fin',JSON.stringify(S))}catch(e){}};
+const save=()=>{try{localStorage.setItem('fin',JSON.stringify(S))}catch(e){}window.cloudSave&&window.cloudSave()};
+function getData(){return S}
+function setData(o){S=o;document.documentElement.dataset.t=S.theme||'l';try{localStorage.setItem('fin',JSON.stringify(S))}catch(e){}}
 let d=new Date(),M=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),day=null,eid=null,ecard=null;
 const add=(m,n)=>{let[y,mm]=m.split('-').map(Number);mm+=n;y+=Math.floor((mm-1)/12);mm=((mm-1)%12+12)%12+1;return y+'-'+String(mm).padStart(2,'0')};
 const diff=(a,b)=>{const[x,p]=a.split('-').map(Number),[y,q]=b.split('-').map(Number);return(y-x)*12+q-p};
@@ -185,19 +188,64 @@ function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(ne
 $('imp').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{S=JSON.parse(t);save();$('dS').close();render()}catch(x){alert('Arquivo inválido')}})};
 function toggleTheme(){S.theme=S.theme=='d'?'l':'d';document.documentElement.dataset.t=S.theme;save()}
 document.documentElement.dataset.t=S.theme;
-const AH="eb725b382139fb78459e5080cc7a0e395d60f805a171317a9da0b9258bfc2834";
-const sha=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,'0')).join('');
 const unlock=()=>{document.body.classList.remove('lock');render()};
 async function login(){
- try{const h=await sha('duofin-salt-v1|'+$('lu').value.trim()+'|'+$('lp').value);
-  if(h===AH){const st=$('lk').checked?localStorage:sessionStorage;try{st.setItem('fin_auth',h)}catch(e){}$('lp').value='';$('er').textContent='';unlock()}
-  else $('er').textContent='Usuário ou senha incorretos.'}
- catch(e){$('er').textContent='Seu navegador bloqueou o login. Abra o site por https.'}
+ const e=$('lu').value.trim(),p=$('lp').value;if(!e||!p){$('er').textContent='Preencha e-mail e senha.';return}
+ $('er').textContent='Entrando…';
+ try{await window.fbLogin(e,p);$('lp').value='';$('er').textContent=''}catch(x){$('er').textContent=window.fbErr(x)}
 }
-function logout(){try{localStorage.removeItem('fin_auth');sessionStorage.removeItem('fin_auth')}catch(e){}location.reload()}
+async function resetPw(){const e=$('lu').value.trim();if(!e){$('er').textContent='Digite seu e-mail primeiro.';return}
+ try{await window.fbReset(e);$('er').textContent='Enviamos um link de redefinição para o seu e-mail.'}catch(x){$('er').textContent=window.fbErr(x)}}
+function logout(){window.fbLogout().then(()=>location.reload())}
 $('lp').addEventListener('keydown',e=>{if(e.key=='Enter')login()});
 $('lu').addEventListener('keydown',e=>{if(e.key=='Enter')$('lp').focus()});
-try{if(localStorage.getItem('fin_auth')===AH||sessionStorage.getItem('fin_auth')===AH)unlock()}catch(e){}
+</script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut,sendPasswordResetEmail} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ====== COLE AQUI A CONFIGURAÇÃO DO SEU PROJETO FIREBASE ======
+const FB={
+  apiKey:"AIzaSyB8QIdyNM9H5ccxjQKeM6VVt52_wHL0CDw",
+  authDomain:"financas-50983.firebaseapp.com",
+  projectId:"financas-50983",
+  storageBucket:"financas-50983.firebasestorage.app",
+  messagingSenderId:"839120116750",
+  appId:"1:839120116750:web:1c5adafb70a9e6868bb05f"
+};
+// ===============================================================
+
+const ok=!String(FB.apiKey).startsWith('COLE');
+let auth,db,uid=null,timer;
+const say=t=>{for(const id of['sy','sy2']){const el=document.getElementById(id);if(el)el.textContent=t}};
+window.fbErr=e=>({
+ 'auth/invalid-credential':'E-mail ou senha incorretos.','auth/wrong-password':'E-mail ou senha incorretos.','auth/user-not-found':'E-mail ou senha incorretos.',
+ 'auth/invalid-email':'E-mail inválido.','auth/too-many-requests':'Muitas tentativas. Aguarde alguns minutos.',
+ 'auth/unauthorized-domain':'Este endereço não está autorizado no Firebase (Authentication > Settings > Authorized domains).',
+ 'auth/network-request-failed':'Sem conexão com a internet.',config:'Firebase ainda não configurado: cole suas chaves no código.'
+}[e&&e.code])||('Erro: '+((e&&e.code)||e));
+if(ok){
+ const app=initializeApp(FB);auth=getAuth(app);db=getFirestore(app);
+ window.fbLogin=(e,p)=>signInWithEmailAndPassword(auth,e,p);
+ window.fbReset=e=>sendPasswordResetEmail(auth,e);
+ window.fbLogout=()=>signOut(auth);
+ const push=async()=>{try{say('Salvando…');await setDoc(doc(db,'users',uid),{json:JSON.stringify(getData()),updated:Date.now()});say('☁ Salvo na nuvem')}catch(e){say('⚠ Não salvou (sem conexão?)')}};
+ window.cloudSave=()=>{if(!uid)return;clearTimeout(timer);say('Salvando…');timer=setTimeout(push,600)};
+ onAuthStateChanged(auth,async u=>{
+  if(!u){uid=null;document.body.classList.add('lock');return}
+  uid=u.uid;say('Sincronizando…');
+  try{
+   const snap=await getDoc(doc(db,'users',uid));
+   if(snap.exists())setData(JSON.parse(snap.data().json));
+   else{const l=getData();if(l.items.length||l.salary||l.cards.length)await push()}
+   say('☁ Salvo na nuvem');
+  }catch(e){say('⚠ Offline: usando dados deste aparelho')}
+  unlock();
+ });
+}else{
+ window.fbLogin=()=>Promise.reject({code:'config'});window.fbReset=window.fbLogin;window.fbLogout=()=>Promise.resolve();
+}
 </script>
 </body>
 </html>
