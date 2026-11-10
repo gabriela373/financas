@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Minhas Finanças</title>
 <style>
-:root{--bg:#eef2fb;--card:#fff;--tx:#0f172a;--mu:#64748b;--ln:#e8ecf3;--bl:#2563eb;--gr:#16a34a;--rd:#e11d48;--sub:#f4f6fa}
-:root[data-t=d]{--bg:#0b1020;--card:#151b2e;--tx:#e8ecf6;--mu:#93a0b8;--ln:#242c44;--sub:#1c2339}
+:root{--bg:#eef1f5;--card:#fff;--tx:#0f172a;--mu:#64748b;--ln:#e8ecf3;--bl:#2563eb;--gr:#16a34a;--rd:#e11d48;--sub:#f4f6fa}
+:root[data-t=d]{--bg:#000000;--card:#131417;--tx:#f1f3f8;--mu:#8b93a7;--ln:#23262e;--sub:#1a1b20}
 *{box-sizing:border-box;margin:0}
 body{font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
 button,input,select{font:inherit;color:inherit}
@@ -61,8 +61,7 @@ body.lock{align-items:center;justify-content:center}body.lock #lg{display:block}
 .tw i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#60a5fa,#2563eb);transition:height .8s}
 .tw::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 12px,#ffffff59 12px 20px),repeating-linear-gradient(90deg,transparent 0 22px,#ffffff59 22px 28px)}
 .cr{position:absolute;left:50%;transform:translateX(-50%);font-size:28px;transition:bottom .8s;margin-bottom:6px}
-body{background:radial-gradient(#ffffff2e 1.2px,transparent 1.3px) 0 0/22px 22px,linear-gradient(135deg,#2f6df0,#1e40af 55%,#6d3fa8) fixed}
-:root[data-t=d] body{background:radial-gradient(#ffffff14 1.2px,transparent 1.3px) 0 0/22px 22px,linear-gradient(135deg,#0b1020,#16224a) fixed}
+dialog textarea{width:100%;padding:9px;border:1px solid var(--ln);border-radius:9px;background:var(--bg);color:inherit;margin-top:3px;font:inherit;resize:vertical}
 @media(max-width:1100px){.grid{grid-template-columns:1fr 1fr}}
 @media(max-width:760px){body{display:block}aside{flex-direction:row;width:auto;height:auto;position:static;margin:8px;padding:10px;overflow-x:auto;align-items:center}aside .lg,aside .sp,aside .sec,#sy{display:none}aside a,aside button{white-space:nowrap}main{padding:12px}.grid{grid-template-columns:1fr}.s2,.s3{grid-column:auto}.big{font-size:34px}.top h1{font-size:20px}}
 </style>
@@ -81,9 +80,10 @@ body{background:radial-gradient(#ffffff2e 1.2px,transparent 1.3px) 0 0/22px 22px
  <div class="mu sec">Menu</div>
  <a id="n-home" class="on" onclick="nav('home')">Visão geral</a>
  <a id="n-apt" onclick="nav('apt')">Apartamento (obra)</a>
+ <a id="n-fit" onclick="nav('fit')">Fitness</a>
  <a onclick="openCard()">Novo cartão</a>
- <a id="n-demo" onclick="toggleDemo()">Modelo (dados fictícios)</a>
  <a onclick="openSet()">Ajustes e backup</a>
+ <a id="n-demo" onclick="toggleDemo()">Modelo (dados fictícios)</a>
  <div class="sp" style="flex:1"></div>
  <div class="mu" id="sy" style="padding:0 4px"></div>
  <button onclick="toggleTheme()">Tema claro/escuro</button>
@@ -93,10 +93,18 @@ body{background:radial-gradient(#ffffff2e 1.2px,transparent 1.3px) 0 0/22px 22px
  <div class="top">
   <span id="nv"><button onclick="mv(-1)" aria-label="Mês anterior">‹</button> <button onclick="mv(1)" aria-label="Próximo mês">›</button></span>
   <h1 id="mo"></h1><span class="mu" id="sy2"></span>
-  <button class="pri" id="bl" onclick="pg=='home'?openItem():openParc()">+ Lançar</button><button onclick="logout()" aria-label="Sair">Sair</button>
+  <button class="pri" id="bl" onclick="pg=='home'?openItem():pg=='apt'?openParc():openWorkout()">+ Lançar</button><button onclick="logout()" aria-label="Sair">Sair</button>
+ </div>
+ <div class="c" id="qaBox" style="margin-bottom:12px">
+  <h3>Lançamento rápido por texto</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+   <input id="qtxt" placeholder='Ex.: &quot;Luz dia 20/11 no valor 150, recorrente&quot;' style="flex:1;min-width:220px;padding:9px;border:1px solid var(--ln);border-radius:9px;background:var(--bg);color:var(--tx)">
+   <button class="pri" onclick="qtGo()">Interpretar</button>
+  </div>
+  <div id="qtOut" class="mu" style="margin-top:8px"></div>
  </div>
  <div id="db" class="demo" style="display:none"><span>Modo modelo: dados fictícios para você conhecer o app. Nada disso é salvo.</span><button onclick="toggleDemo()">Sair do modelo</button></div>
- <div class="grid" id="g"></div><div class="grid" id="ap" style="display:none"></div>
+ <div class="grid" id="g"></div><div class="grid" id="ap" style="display:none"></div><div class="grid" id="fp" style="display:none"></div>
 </main>
 
 <dialog id="dI"><h3 id="dIt">Novo lançamento</h3>
@@ -146,6 +154,15 @@ body{background:radial-gradient(#ffffff2e 1.2px,transparent 1.3px) 0 0/22px 22px
  <label id="qrw">Repetir por quantos meses?<input id="qr" type="number" min="1" max="120" value="1"></label>
  <div class="acts"><button id="qdx" onclick="delParc()">Excluir</button><button onclick="dP.close()">Cancelar</button><button class="pri" onclick="saveParc()">Salvar</button></div>
 </dialog>
+<dialog id="dW"><h3>Treino</h3>
+ <label>Data<input id="wd" type="date"></label>
+ <label>Tipo<select id="wt"><option value="academia">Academia</option><option value="futevolei">Futevôlei</option><option value="corrida">Corrida</option><option value="outro">Outro</option></select></label>
+ <div id="wexw"><label>Exercícios (um por linha: Nome | séries x repetições x carga)<textarea id="wex" rows="4" placeholder="Supino reto | 4x10x40"></textarea></label></div>
+ <div id="wdurw"><label>Duração (min)<input id="wdur" type="number" min="0"></label></div>
+ <label>Intensidade<select id="win"><option value="leve">Leve</option><option value="moderado">Moderado</option><option value="intenso">Intenso</option></select></label>
+ <label>Observações<input id="wn"></label>
+ <div class="acts"><button id="wdx" onclick="delWorkout()">Excluir</button><button onclick="dW.close()">Cancelar</button><button class="pri" onclick="saveWorkout()">Salvar</button></div>
+</dialog>
 
 <script>
 const $=s=>document.getElementById(s),R=v=>(+v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -165,10 +182,12 @@ const sum=a=>a.reduce((t,x)=>t+x,0);
 const inM=(i,m)=>i.rec?(i.start<=m&&(!i.end||i.end>=m)):i.m==m;
 const parc=(i,m)=>i.rec&&i.n?(diff(i.start,m)+1)+'/'+i.n:'';
 function render(){
- $('n-home').className=pg=='home'?'on':'';$('n-apt').className=pg=='apt'?'on':'';$('n-demo').className=demo?'on':'';
- $('db').style.display=demo?'':'none';$('nv').style.display=pg=='home'?'':'none';
- $('g').style.display=pg=='home'?'':'none';$('ap').style.display=pg=='apt'?'':'none';$('bl').textContent=pg=='home'?'+ Lançar':'+ Parcela';
+ $('n-home').className=pg=='home'?'on':'';$('n-apt').className=pg=='apt'?'on':'';$('n-fit').className=pg=='fit'?'on':'';$('n-demo').className=demo?'on':'';
+ $('db').style.display=demo?'':'none';$('nv').style.display=pg=='home'?'':'none';$('qaBox').style.display=pg=='home'?'':'none';
+ $('g').style.display=pg=='home'?'':'none';$('ap').style.display=pg=='apt'?'':'none';$('fp').style.display=pg=='fit'?'':'none';
+ $('bl').textContent=pg=='home'?'+ Lançar':pg=='apt'?'+ Parcela':'+ Treino';
  if(pg=='apt'){renderApt();return}
+ if(pg=='fit'){renderFit();return}
  const its=S.items.filter(i=>inM(i,M)).concat(vparc(M)),des=its.filter(i=>i.t=='d'),rec=its.filter(i=>i.t=='r');
  const extra=sum(rec.map(i=>i.v)),inc=S.salary+extra,gasto=sum(des.map(i=>i.v)),sobra=inc-gasto;
  const [y,mm]=M.split('-'),nm=new Date(y,mm-1,1).toLocaleDateString('pt-BR',{month:'long'});
@@ -200,15 +219,17 @@ function render(){
  const rl=S.items.filter(i=>i.rec).sort((a,b)=>a.d.localeCompare(b.d));
  h+=`<section class="c s2"><h3>Recorrentes e parcelados</h3>${rl.length?rl.map(i=>`<div class="row" onclick="${i.pid?`nav('apt')`:`openItem(${i.id})`}"><span>${esc(i.d)}<span class="tag">${i.k}</span><div class="mu">desde ${i.start.split('-').reverse().join('/')}${i.end?' · até '+i.end.split('-').reverse().join('/'):' · sem fim'}${i.n?' · '+i.n+' parcelas':''}</div></span><b style="color:${i.t=='r'?'var(--gr)':'inherit'}">${R(i.v)}</b></div>`).join(''):'<div class="empty">Lance algo com repetição “Todo mês” ou “Parcelado” e ele aparece aqui.</div>'}</section>`;
  {const q=aptStats(),I=q.a.info;h+=`<section class="c s3" onclick="nav('apt')" style="cursor:pointer"><span class="ic">🚧</span><h3>Obra (${esc(I.nome||'Apartamento')})</h3><div class="mid">${q.pct}% concluída</div><div class="mu">${q.prox?'Próxima parcela: '+esc(q.prox.n)+' · '+fdt(q.prox.v)+' · '+R(q.tot(q.prox)):'Toque para cadastrar o apartamento, a obra e as parcelas'}${q.atr.length?` · <b style="color:var(--rd)">${q.atr.length} atrasada(s)</b>`:''}</div></section>`}
+ {const fst=fitStats();h+=`<section class="c s3" onclick="nav('fit')" style="cursor:pointer"><span class="ic">🏋️</span><h3>Fitness</h3><div class="mid">${fst.weekCount} treino${fst.weekCount==1?'':'s'} esta semana</div><div class="mu">${fst.streak?('sequência de '+fst.streak+' dia'+(fst.streak==1?'':'s')):'Toque para registrar seu primeiro treino'}</div></section>`}
  $('g').innerHTML=h;
 }
 const tg=k=>{if(k[0]=='p'){tgP(+k.split('_')[0].slice(1));return}S.paid[k]=!S.paid[k];save();render()};
-function openItem(id){
- eid=id||null;const i=id?S.items.find(x=>x.id==id):{d:'',v:'',t:'d',k:'Outros',y:'',c:''};
+function openItem(id,pre){
+ eid=id||null;const i=id?S.items.find(x=>x.id==id):(pre||{d:'',v:'',t:'d',k:'Outros',y:'',c:''});
  $('dIt').textContent=id?'Editar lançamento':'Novo lançamento';
  $('fk').innerHTML=Object.keys(CATS).map(k=>`<option>${k}</option>`).join('');
  $('fc').innerHTML='<option value="">Nenhum</option>'+S.cards.map(k=>`<option value="${k.id}">${esc(k.n)}</option>`).join('');
- $('fd').value=i.d;$('fv').value=i.v;$('ft').value=i.t;$('fk').value=i.k;$('fy').value=i.y;$('fc').value=i.c;$('fr').value='u';$('fn').value=12;
+ $('fd').value=i.d;$('fv').value=i.v;$('ft').value=i.t;$('fk').value=i.k;$('fy').value=i.y;$('fc').value=i.c||'';
+ $('fr').value=(!id&&pre&&pre.parcN)?'p':(!id&&pre&&pre.rec)?'m':'u';$('fn').value=(pre&&pre.parcN)||12;
  $('rp').style.display=id?'none':'';$('fx').style.display=id?'':'none';$('fe').style.display=id&&i.rec?'':'none';trp();$('dI').showModal();
 }
 const trp=()=>$('pn').style.display=$('fr').value=='p'?'':'none';$('fr').onchange=trp;
@@ -255,6 +276,28 @@ function vparc(m){return(S.apt&&S.apt.parc||[]).filter(p=>p.v.slice(0,7)==m).map
 const isP=i=>i.pid?!!i.paid:!!S.paid[i.id+'_'+M];
 function aptStats(){const a=A(),T=today(),ob=[...a.obra].sort((x,y)=>x.d.localeCompare(y.d)),P=a.parc,tot=p=>p.val+(p.jur||0),st=p=>p.pg?'Paga':p.v<T?'Atrasada':'Pendente';
  return{a,ob,pct:ob.length?ob[ob.length-1].p:0,P,tot,st,pago:sum(P.filter(p=>p.pg).map(tot)),aber:sum(P.filter(p=>!p.pg).map(tot)),atr:P.filter(p=>st(p)=='Atrasada'),jur:sum(P.map(p=>p.jur||0)),prox:P.filter(p=>!p.pg).sort((x,y)=>x.v.localeCompare(y.v))[0]}}
+function towerIcon(pct){
+ const H=170,Y0=190,topY=Y0-H,built=H*pct/100,boundaryY=Y0-built;
+ const crane=pct>=100?'🏁':'🏗️',craneY=Math.max(topY+30,boundaryY+12);
+ return `<svg viewBox="0 0 140 210" width="150" height="225" role="img" aria-label="Prédio em construção, ${pct}% concluído" style="filter:drop-shadow(0 14px 18px rgba(0,0,0,.28))">
+ <defs>
+  <linearGradient id="twBody" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2b4f86"/><stop offset=".45" stop-color="#3d6bb5"/><stop offset=".55" stop-color="#4a7bc9"/><stop offset="1" stop-color="#2b4f86"/></linearGradient>
+  <linearGradient id="twRaw" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9aa3af"/><stop offset=".5" stop-color="#c3c9d1"/><stop offset="1" stop-color="#9aa3af"/></linearGradient>
+  <linearGradient id="twRoof" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a6b85"/><stop offset="1" stop-color="#3b4a60"/></linearGradient>
+  <pattern id="twWin" width="18" height="16" patternUnits="userSpaceOnUse"><rect width="18" height="16" fill="transparent"/><rect x="3" y="3" width="6" height="8" rx="1.5" fill="#ffe08a" opacity=".92"/><rect x="11" y="3" width="4" height="8" rx="1.5" fill="#ffd166" opacity=".7"/></pattern>
+  <pattern id="twHatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="10" height="10" fill="transparent"/><line x1="0" y1="0" x2="0" y2="10" stroke="#ffffff" stroke-opacity=".35" stroke-width="3"/></pattern>
+  <clipPath id="twClip"><rect x="20" y="${topY}" width="100" height="${H}" rx="10"/></clipPath>
+ </defs>
+ <rect x="20" y="${topY}" width="100" height="${H}" rx="10" fill="url(#twRaw)" clip-path="url(#twClip)"/>
+ <rect x="20" y="${topY}" width="100" height="${H}" rx="10" fill="url(#twHatch)" clip-path="url(#twClip)"/>
+ <rect x="20" y="${boundaryY}" width="100" height="${built}" fill="url(#twBody)" clip-path="url(#twClip)"/>
+ <rect x="20" y="${boundaryY}" width="100" height="${built}" fill="url(#twWin)" clip-path="url(#twClip)"/>
+ <rect x="20" y="${boundaryY}" width="38" height="${built}" fill="#ffffff" opacity=".16" clip-path="url(#twClip)"/>
+ <rect x="20" y="${topY}" width="100" height="${H}" rx="10" fill="none" stroke="#1e2a3f" stroke-opacity=".25" stroke-width="2"/>
+ <rect x="35" y="${topY-14}" width="70" height="18" rx="6" fill="url(#twRoof)"/>
+ <text x="70" y="${craneY}" font-size="34" text-anchor="middle">${crane}</text>
+ </svg>`;
+}
 function renderApt(){
  const q=aptStats(),{a,ob,pct,P,tot,st,pago,aber,atr,jur,prox}=q,I=a.info;
  $('mo').innerHTML='Apartamento <span>obra e financiamento</span>';
@@ -263,21 +306,34 @@ function renderApt(){
   return`<div class="mid">${R(sm(p=>!p.pg))}</div><div class="mu">a pagar · pago ${R(sm(p=>p.pg))}${L.some(p=>st(p)=='Atrasada')?` · <b style="color:var(--rd)">atrasado ${R(sm(p=>st(p)=='Atrasada'))}</b>`:''}</div>
  <div style="max-height:360px;overflow:auto;margin-top:8px">${L.length?L.map(p=>`<div class="row ${p.pg?'p':''}"><button class="chk ${p.pg?'on':''}" onclick="tgP(${p.id})" aria-label="Marcar como paga"></button><span style="flex:1" onclick="openParc(null,${p.id})"><span class="t">${esc(p.n)}</span><span class="tag" style="color:${col(st(p))}">${st(p)}</span><div class="mu">vence ${fdt(p.v)}${p.jur?' · juros/multa '+R(p.jur):''}${p.pg&&p.pgd?' · pago em '+fdt(p.pgd):''}</div></span>${p.doc?`<button style="padding:2px 6px" onclick="openDoc(${p.doc})" aria-label="Ver comprovante">📎</button>`:''}<b>${R(tot(p))}</b></div>`).join(''):'<div class="empty">Nenhuma parcela cadastrada.</div>'}</div>
  <button style="margin-top:10px;width:100%" onclick="openParc('${tp}')">+ Adicionar parcelas</button>`};
- let h=`<section class="c s2" style="display:flex;gap:24px;flex-wrap:wrap"><div class="twp"><b class="cr" style="bottom:${pct*2}px">🏗️</b><div class="tw"><i style="height:${pct}%"></i></div></div>
+ let h=`<section class="c s2" style="display:flex;gap:24px;flex-wrap:wrap"><div style="flex:none">${towerIcon(pct)}</div>
  <div style="flex:1;min-width:240px"><h3>${esc(I.nome||'Meu apartamento')}</h3><div class="mu">${esc(I.cons||'Cadastre a construtora em “Editar dados”')}${I.end?' · '+esc(I.end):''}</div>
  <div class="big" style="margin-top:8px">${pct}<small>% da obra</small></div>
  <div class="mu">${dias==null?'Defina a previsão de entrega':dias>=0?'Entrega prevista em '+fdt(I.ent)+' · faltam '+dias+' dias':'Entrega prevista em '+fdt(I.ent)+' · passou há '+(-dias)+' dias'}</div>
  <div class="legend" style="margin:14px 0"><span>Valor do imóvel<b>${R(I.val)}</b></span><span>Pago<b style="color:var(--gr)">${R(pago)}</b></span><span>A pagar<b>${R(aber)}</b></span><span>Atrasadas<b style="color:${atr.length?'var(--rd)':'inherit'}">${atr.length} · ${R(sum(atr.map(tot)))}</b></span><span>Juros/multas<b>${R(jur)}</b></span></div>
  <div class="mu">${prox?'Próxima parcela: '+esc(prox.n)+' ('+(prox.tp=='c'?'construtora':'Caixa')+') · '+fdt(prox.v)+' · '+R(tot(prox)):''}</div>
  <div class="acts" style="justify-content:flex-start"><button onclick="openInfo()">Editar dados</button><button class="pri" onclick="addObra()">+ Atualizar % da obra</button></div></div></section>`;
+ h+=`<section class="c s2"><span class="ic">🏢</span><h3>Fachada do prédio</h3>
+ <div class="mu" style="margin-bottom:8px">Anexe uma foto da fachada em “Documentos” (categoria Fachada) para ver a evolução da obra sobre a foto real do seu prédio.</div>
+ <div id="facadeWrap" style="position:relative;border-radius:14px;overflow:hidden;background:var(--sub);aspect-ratio:3/4;max-width:320px;margin:0 auto">
+  <img id="facadeImg" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+  <img id="facadeImg2" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1) brightness(.55)">
+  <div id="facadeHatch" style="display:none;position:absolute;left:0;right:0;top:0;background:repeating-linear-gradient(45deg,transparent 0 10px,#ffffff33 10px 20px);pointer-events:none"></div>
+  <b id="facadeCrane" style="display:none;position:absolute;left:8px;font-size:24px">🏗️</b>
+  <div id="facadeEmpty" class="empty" style="padding:60px 10px">Nenhuma foto de fachada anexada ainda.</div>
+ </div></section>`;
  const pts=ob.map((o,i)=>[ob.length>1?i/(ob.length-1)*280+10:150,70-o.p*.6]);
  h+=`<section class="c"><h3>Evolução da obra</h3>${ob.length>1?`<svg viewBox="0 0 300 80" width="100%" role="img" aria-label="Gráfico da evolução da obra"><polyline fill="none" stroke="var(--bl)" stroke-width="2.5" points="${pts.map(x=>x.join(',')).join(' ')}"/>${pts.map(x=>`<circle cx="${x[0]}" cy="${x[1]}" r="3.5" fill="var(--bl)"/>`).join('')}</svg>`:''}
  ${ob.length?[...ob].reverse().map(o=>`<div class="row" onclick="delObra(${o.id})"><span>${fdt(o.d)}<div class="mu">${esc(o.o||'')}</div></span><b>${o.p}%</b></div>`).join(''):'<div class="empty">Registre o % do boletim da construtora e o prédio vai subindo.</div>'}</section>`;
+ h+=`<section class="c"><span class="ic">📐</span><h3>Planta em 3D</h3>
+ <div class="mu" style="margin-bottom:8px">Anexe a planta como imagem (categoria Planta) para vê-la aqui com efeito 3D. Toque na imagem para girar.</div>
+ <div id="plantaBox" style="display:flex;justify-content:center;padding:10px 0"><div class="empty">Nenhuma planta anexada ainda.</div></div></section>`;
  h+=`<section class="c"><h3>Construtora</h3>${lst('c')}</section><section class="c"><h3>Caixa (financiamento)</h3>${lst('x')}</section>`;
- h+=`<section class="c"><h3>Documentos e comprovantes</h3><div style="display:flex;gap:6px"><select id="dcat" style="flex:1;padding:8px;border-radius:9px;border:1px solid var(--ln);background:var(--bg);color:var(--tx)">${['Planta','Contrato','Comprovante','Boletim de obra','Vistoria','Outro'].map(c=>`<option>${c}</option>`).join('')}</select><button class="pri" onclick="fi.click()">Anexar</button></div>
+ h+=`<section class="c"><h3>Documentos e comprovantes</h3><div style="display:flex;gap:6px"><select id="dcat" style="flex:1;padding:8px;border-radius:9px;border:1px solid var(--ln);background:var(--bg);color:var(--tx)">${['Fachada','Planta','Contrato','Comprovante','Boletim de obra','Vistoria','Outro'].map(c=>`<option>${c}</option>`).join('')}</select><button class="pri" onclick="fi.click()">Anexar</button></div>
  <div class="mu" style="margin:8px 0">Os arquivos ficam guardados só neste aparelho (não vão para a nuvem).</div>
  ${a.docs.length?a.docs.map(x=>`<div class="row"><span style="flex:1" onclick="openDoc(${x.id})">${/image/.test(x.ty||'')?'🖼️':'📄'} ${esc(x.n)}<div class="mu">${x.cat} · ${fdt(x.d)}</div></span><button style="padding:2px 8px" onclick="delDoc(${x.id})" aria-label="Excluir documento">×</button></div>`).join(''):'<div class="empty">Anexe a planta, o contrato e os comprovantes.</div>'}</section>`;
  $('ap').innerHTML=h;
+ loadFacade();loadPlanta();
 }
 function addObra(){const p=parseFloat(String(prompt('% da obra concluída agora (0 a 100):','')||'').replace(',','.'));if(!(p>=0&&p<=100))return;
  const dt=prompt('Data do boletim (AAAA-MM-DD):',today());if(!/^\d{4}-\d{2}-\d{2}$/.test(dt||''))return;const o=prompt('Observação (opcional):','')||'';
@@ -317,8 +373,137 @@ function DEMO(){const a=add(M,-3);let q=1;
  apt:{info:{nome:'Residencial Vila Olímpia',cons:'Construtora Exemplo',end:'Vila Olímpia, São Paulo · Apto 82',val:640000,con:a+'-02',ent:addm(M+'-28',14)},
  obra:[12,24,38,47].map((p,i)=>({id:900+i,d:addm(a+'-05',i),p,o:['Fundação concluída','Estrutura até o 6º andar','Alvenaria em andamento','Instalações e reboco'][i]})),
  parc:[...pc,...mk('x','Juros de obra',12,a+'-01',2332.54,3,200)],
- docs:[{id:1,n:'Contrato de compra e venda.pdf',cat:'Contrato',ty:'application/pdf',d:a+'-02'},{id:2,n:'Planta tipo 62m².pdf',cat:'Planta',ty:'application/pdf',d:a+'-02'},{id:3,n:'Comprovante parcela 01.pdf',cat:'Comprovante',ty:'application/pdf',d:a+'-10'}]}}}
+ docs:[{id:1,n:'Contrato de compra e venda.pdf',cat:'Contrato',ty:'application/pdf',d:a+'-02'},{id:2,n:'Planta tipo 62m².pdf',cat:'Planta',ty:'application/pdf',d:a+'-02'},{id:3,n:'Comprovante parcela 01.pdf',cat:'Comprovante',ty:'application/pdf',d:a+'-10'}]},
+ fit:{workouts:(()=>{const dO=n=>{const t=new Date();t.setDate(t.getDate()-n);return iso(t)};return[
+ {id:500,date:dO(13),type:'academia',note:'',dur:'',inten:'moderado',ex:[{name:'Supino reto',series:4,reps:10,kg:40},{name:'Remada curvada',series:4,reps:10,kg:35}]},
+ {id:501,date:dO(11),type:'futevolei',note:'Quadra do clube',dur:90,inten:'moderado',ex:[]},
+ {id:502,date:dO(9),type:'academia',note:'',dur:'',inten:'moderado',ex:[{name:'Agachamento',series:4,reps:8,kg:60},{name:'Supino reto',series:4,reps:10,kg:42.5}]},
+ {id:503,date:dO(7),type:'corrida',note:'Parque Ibirapuera',dur:35,inten:'leve',ex:[]},
+ {id:504,date:dO(6),type:'academia',note:'',dur:'',inten:'moderado',ex:[{name:'Supino reto',series:4,reps:8,kg:45},{name:'Desenvolvimento',series:3,reps:10,kg:20}]},
+ {id:505,date:dO(4),type:'futevolei',note:'',dur:100,inten:'intenso',ex:[]},
+ {id:506,date:dO(2),type:'academia',note:'Treino de pernas',dur:'',inten:'moderado',ex:[{name:'Agachamento',series:4,reps:8,kg:65},{name:'Leg press',series:4,reps:12,kg:120}]},
+ {id:507,date:dO(1),type:'corrida',note:'',dur:40,inten:'moderado',ex:[]},
+ {id:508,date:dO(0),type:'academia',note:'',dur:'',inten:'moderado',ex:[{name:'Supino reto',series:4,reps:6,kg:47.5}]}
+ ]})()}}}
 function toggleDemo(){if(!demo){REAL=S;S=DEMO();demo=true}else{S=REAL;REAL=null;demo=false}render()}
+
+// ---------- Fachada (foto real com evolução) e Planta em 3D ----------
+async function loadFacade(){
+ const docs=(A().docs||[]).filter(x=>x.cat=='Fachada'&&/image/.test(x.ty||'')).sort((a,b)=>b.id-a.id);
+ const im1=$('facadeImg');if(!im1||!docs.length)return;
+ const b=await fget(docs[0].id);if(!b)return;
+ const url=URL.createObjectURL(b),pct=aptStats().pct;
+ const im2=$('facadeImg2'),ht=$('facadeHatch'),cr=$('facadeCrane'),em=$('facadeEmpty');
+ em.style.display='none';
+ im1.style.display='block';im1.src=url;im1.style.clipPath=`inset(${100-pct}% 0 0 0)`;
+ im2.style.display='block';im2.src=url;im2.style.clipPath=`inset(0 0 ${pct}% 0)`;
+ ht.style.display='block';ht.style.height=(100-pct)+'%';
+ cr.style.display='block';cr.style.top=`calc(${100-pct}% - 14px)`;
+}
+async function loadPlanta(){
+ const docs=(A().docs||[]).filter(x=>x.cat=='Planta'&&/image/.test(x.ty||''));
+ const box=$('plantaBox');if(!box||!docs.length)return;
+ const urls=[];for(const d of docs){const b=await fget(d.id);if(b)urls.push(URL.createObjectURL(b))}
+ if(!urls.length)return;
+ box.innerHTML=`<div><img id="plantaImg" src="${urls[0]}" style="max-width:100%;max-height:320px;border-radius:10px;box-shadow:0 24px 50px #0004;transform:perspective(900px) rotateY(18deg) rotateX(6deg);transition:transform .3s;cursor:pointer" onclick="plantaFlip(this)">${urls.length>1?`<div class="acts" style="justify-content:center"><button onclick="plantaNav(-1)">‹</button><span class="mu" id="plantaN">1/${urls.length}</span><button onclick="plantaNav(1)">›</button></div>`:''}</div>`;
+ window.__plantaUrls=urls;window.__plantaIdx=0;
+}
+function plantaFlip(img){img.style.transform=img.style.transform.indexOf('rotateY(18deg)')>-1?'perspective(900px) rotateY(0) rotateX(0)':'perspective(900px) rotateY(18deg) rotateX(6deg)'}
+function plantaNav(dlt){const u=window.__plantaUrls;if(!u)return;window.__plantaIdx=(window.__plantaIdx+dlt+u.length)%u.length;$('plantaImg').src=u[window.__plantaIdx];$('plantaN').textContent=(window.__plantaIdx+1)+'/'+u.length}
+
+// ---------- Lançamento rápido por texto (interpretação por palavras-chave) ----------
+const KWCAT={'Moradia':['aluguel','condomin','financiamento','iptu'],'Contas fixas':['luz','energia','agua','água','internet','telefone','celular','gas','gás'],
+ 'Alimentação':['mercado','supermercado','comida','restaurante','ifood','lanche','padaria'],
+ 'Transporte':['uber','99','gasolina','combustivel','combustível','onibus','ônibus','estacionamento','metro','metrô'],
+ 'Saúde':['farmacia','farmácia','remedio','remédio','plano de saude','plano de saúde','consulta','dentista','academia'],
+ 'Lazer':['cinema','streaming','netflix','viagem','show','bar','balada'],'Cartão':['cartao','cartão','fatura'],'Reserva':['reserva','poupança','investimento','guardar']};
+function qtParse(raw){
+ const t=raw.trim();if(!t)return null;const s=t.toLowerCase();
+ const isR=/\b(receb|receita|entrou|ganhei|caiu)\b/.test(s);
+ let val=null,mV=s.match(/valor(?:\s+de)?\s*r?\$?\s*([\d.]+(?:,\d{1,2})?)/)||s.match(/r\$\s*([\d.]+(?:,\d{1,2})?)/);
+ if(mV)val=parseFloat(mV[1].replace(/\./g,'').replace(',','.'));
+ else{const nums=[...s.matchAll(/(\d+(?:[.,]\d{1,2})?)(?!\s*\/)/g)].map(m=>m[1]);if(nums.length)val=parseFloat(nums[nums.length-1].replace(',','.'))}
+ let dd='';const mD=s.match(/(\d{1,2})\/(\d{1,2})/);if(mD)dd=+mD[1];else{const mDia=s.match(/dia\s+(\d{1,2})/);if(mDia)dd=+mDia[1]}
+ const rec=/todo\s*m[eê]s|mensal|recorrente/.test(s);
+ let parcN=null;const mP=s.match(/(\d{1,3})\s*x\b/)||s.match(/parcel\w*\s*(?:em)?\s*(\d{1,3})/);if(mP)parcN=+mP[1];
+ let cat='Outros';for(const k in KWCAT)if(KWCAT[k].some(w=>s.includes(w))){cat=k;break}
+ let cardId='';for(const c of S.cards)if(c.n&&s.includes(c.n.toLowerCase().split(' ')[0]))cardId=c.id;
+ let desc=t.replace(/\b(lan[cç]ar|lan[cç]a|lance|adicionar|cria|criar|registra|registrar|conta de|conta|receb\w*|ganhei|entrou|caiu)\b/gi,'')
+  .replace(/\b(pra|para)\s+pagamento\b/gi,'').replace(/\bno\s+valor(?:\s+de)?\s*r?\$?\s*[\d.,]+/gi,'')
+  .replace(/\br\$\s*[\d.,]+/gi,'').replace(/\bvalor\s*r?\$?\s*[\d.,]+/gi,'')
+  .replace(/\bdia\s+\d{1,2}(?:\/\d{1,2})?\b/gi,'').replace(/\d{1,2}\/\d{1,2}(?:\/\d{2,4})?/g,'').replace(/\bdia\b/gi,'')
+  .replace(/\btodo\s*m[eê]s\b|\bmensal\b|\brecorrente\b/gi,'').replace(/\bparcelad\w*(?:\s+em\s*\d+x?)?\b|\b\d{1,3}\s*x\b/gi,'')
+  .replace(/\s{2,}/g,' ').trim().replace(/^[-,.\s]+|[-,.\s]+$/g,'');
+ if(!desc)desc='Lançamento';
+ desc=desc.charAt(0).toUpperCase()+desc.slice(1);
+ return{d:desc,v:val||0,t:isR?'r':'d',k:cat,y:dd,c:cardId,rec,parcN};
+}
+let QP=null;
+function qtGo(){
+ const p=qtParse($('qtxt').value);
+ if(!p||!p.v){$('qtOut').innerHTML='Não consegui entender o valor. Tente algo como “Luz dia 20/11 no valor 150”.';QP=null;return}
+ QP=p;
+ $('qtOut').innerHTML=`Entendi: <b>${esc(p.d)}</b> · ${R(p.v)} · ${p.t=='r'?'Receita':'Despesa'} · ${p.k}${p.y?' · dia '+p.y:''}${p.rec?' · recorrente':''}${p.parcN?' · '+p.parcN+'x':''}
+ <div class="acts" style="margin-top:8px;justify-content:flex-start"><button onclick="qtEdit()">Editar antes de salvar</button><button class="pri" onclick="qtConfirm()">Confirmar e lançar</button></div>`;
+}
+function qtConfirm(){
+ if(!QP)return;const p=QP,b={d:p.d,v:p.v,t:p.t,k:p.k,y:+p.y||'',c:p.c||''};
+ if(p.parcN&&p.parcN>1)for(let i=0;i<p.parcN;i++)S.items.push({...b,id:Date.now()+i,rec:true,start:M,end:add(M,p.parcN-1),n:p.parcN,d:b.d+' '+(i+1)+'/'+p.parcN});
+ else if(p.rec)S.items.push({...b,id:Date.now(),rec:true,start:M,end:'',n:0});
+ else S.items.push({...b,id:Date.now(),m:M});
+ save();$('qtxt').value='';$('qtOut').innerHTML='Lançado! ✅';QP=null;render();
+}
+function qtEdit(){if(!QP)return;const p=QP;openItem(null,{d:p.d,v:p.v,t:p.t,k:p.k,y:p.y,c:p.c,rec:p.rec,parcN:p.parcN});$('qtOut').innerHTML='';}
+
+// ---------- Fitness ----------
+const F=()=>S.fit||(S.fit={workouts:[]});
+const TYEMO={academia:'🏋️',futevolei:'⚽',corrida:'🏃',outro:'🤸'};
+const TYLBL={academia:'Academia',futevolei:'Futevôlei',corrida:'Corrida',outro:'Outro'};
+function parseEx(raw){
+ return raw.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+  const m=l.match(/^(.*?)(?:\s*[-|]\s*)?(\d+)\s*x\s*(\d+)\s*x\s*([\d.,]+)/i);
+  if(m)return{name:m[1].trim()||'Exercício',series:+m[2],reps:+m[3],kg:parseFloat(m[4].replace(',','.'))};
+  return{name:l.replace(/^[-|]\s*/,''),series:null,reps:null,kg:null};
+ });
+}
+const twk=()=>{const ac=$('wt').value=='academia';$('wexw').style.display=ac?'':'none';$('wdurw').style.display=ac?'none':''};
+$('wt').onchange=twk;
+function openWorkout(id){
+ eid=id||null;const w=id?F().workouts.find(x=>x.id==id):{date:today(),type:'academia',note:'',dur:'',inten:'moderado',ex:[]};
+ $('wd').value=w.date;$('wt').value=w.type;$('wn').value=w.note||'';$('wdur').value=w.dur||'';$('win').value=w.inten||'moderado';
+ $('wex').value=(w.ex||[]).map(e=>e.series?`${e.name} | ${e.series}x${e.reps}x${e.kg}`:e.name).join('\n');
+ $('wdx').style.display=id?'':'none';twk();$('dW').showModal();
+}
+function saveWorkout(){
+ const date=$('wd').value;if(!date){$('wd').focus();return}
+ const type=$('wt').value,exraw=$('wex').value;
+ const b={date,type,note:$('wn').value.trim(),dur:+$('wdur').value||'',inten:$('win').value,ex:type=='academia'?parseEx(exraw):[]};
+ if(eid)Object.assign(F().workouts.find(x=>x.id==eid),b);else F().workouts.push({...b,id:Date.now()});
+ save();$('dW').close();render();
+}
+function delWorkout(){if(confirm('Excluir este treino?')){F().workouts=F().workouts.filter(x=>x.id!=eid);save();$('dW').close();render()}}
+function fitStats(){
+ const W=[...F().workouts].sort((a,b)=>b.date.localeCompare(a.date)),have=new Set(W.map(w=>w.date));
+ let streak=0,d=new Date();for(;;){const k=iso(d);if(have.has(k)){streak++;d.setDate(d.getDate()-1)}else break}
+ const now=new Date(),dow=(now.getDay()+6)%7,monday=new Date(now);monday.setDate(now.getDate()-dow);
+ const weekCount=W.filter(w=>w.date>=iso(monday)).length;
+ const prs={};W.forEach(w=>(w.ex||[]).forEach(e=>{if(!e.kg)return;const k=e.name.toLowerCase();if(!prs[k]||e.kg>prs[k].kg)prs[k]={name:e.name,kg:e.kg,date:w.date}}));
+ const prList=Object.values(prs).sort((a,b)=>b.kg-a.kg).slice(0,8);
+ const weeks=[];for(let i=7;i>=0;i--){const mo=new Date(monday);mo.setDate(monday.getDate()-7*i);const key=iso(mo),end=new Date(mo);end.setDate(mo.getDate()+6);const ek=iso(end);
+  weeks.push({l:mo.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),n:W.filter(w=>w.date>=key&&w.date<=ek).length})}
+ return{W,streak,weekCount,prList,weeks};
+}
+function renderFit(){
+ const{W,streak,weekCount,prList,weeks}=fitStats(),mx=Math.max(1,...weeks.map(w=>w.n));
+ $('mo').innerHTML='Fitness <span>treinos e evolução</span>';
+ let h=`<section class="c"><span class="ic">🏋️</span><h3>Treinos nesta semana</h3><div class="big">${weekCount}</div><div class="mu">desde segunda-feira</div></section>`;
+ h+=`<section class="c"><span class="ic">🔥</span><h3>Sequência atual</h3><div class="big">${streak}<small> dia${streak==1?'':'s'}</small></div><div class="mu">${streak?'continue assim!':'treine hoje para começar uma sequência'}</div></section>`;
+ h+=`<section class="c"><span class="ic">🏆</span><h3>Recordes pessoais</h3>${prList.length?prList.map(p=>`<div class="row"><span>${esc(p.name)}<div class="mu">${fdt(p.date)}</div></span><b>${p.kg}kg</b></div>`).join(''):'<div class="empty">Registre exercícios de academia com carga para ver seus recordes.</div>'}</section>`;
+ h+=`<section class="c s3"><h3>Treinos por semana</h3><div style="display:flex;gap:10px;align-items:flex-end;height:90px">${weeks.map(w=>`<div style="flex:1;text-align:center"><div style="height:${w.n/mx*70}px;background:var(--bl);border-radius:4px 4px 0 0;transition:height .4s"></div><div class="mu" style="margin-top:4px">${w.l}</div></div>`).join('')}</div></section>`;
+ h+=`<section class="c s3"><h3>Treinos recentes</h3>${W.length?W.slice(0,25).map(w=>`<div class="row" onclick="openWorkout(${w.id})"><span>${TYEMO[w.type]||'🤸'} ${TYLBL[w.type]||'Outro'}<div class="mu">${fdt(w.date)}${w.type=='academia'?(w.ex&&w.ex.length?' · '+w.ex.map(e=>e.name).join(', '):''):(w.dur?' · '+w.dur+' min':'')+(w.inten&&w.type!='academia'?' · '+w.inten:'')}${w.note?' · '+esc(w.note):''}</div></span><b>${w.type=='academia'&&w.ex&&w.ex.some(e=>e.kg)?Math.max(...w.ex.filter(e=>e.kg).map(e=>e.kg))+'kg':''}</b></div>`).join(''):'<div class="empty">Registre seu primeiro treino em “+ Treino”.</div>'}</section>`;
+ $('fp').innerHTML=h;
+}
+
 </script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
