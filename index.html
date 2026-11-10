@@ -51,8 +51,20 @@ body.lock aside,body.lock main{display:none}
 body.lock{align-items:center;justify-content:center}body.lock #lg{display:block}
 #lg h2{font-size:22px;margin-bottom:4px}#lg input{width:100%;padding:11px;border:1px solid var(--ln);border-radius:10px;background:var(--bg);margin-top:4px}
 #lg .pri{width:100%;padding:11px;margin-top:16px}#er{color:var(--rd);font-size:12px;min-height:16px;margin-top:8px}
+.c{position:relative}.s3{grid-column:1/-1}
+.ic{position:absolute;right:20px;top:14px;font-size:50px;filter:drop-shadow(0 6px 6px #0003);pointer-events:none}
+.dt{font-size:8px;line-height:6px;opacity:.6;min-height:6px}
+.av{width:34px;height:34px;border-radius:50%;background:var(--bl);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.demo{background:#fef3c7;color:#92400e;border-radius:14px;padding:10px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.twp{position:relative;padding-top:30px;width:150px;flex:none}
+.tw{position:relative;height:200px;width:130px;margin:0 auto;border:3px solid var(--mu);border-bottom-width:6px;border-radius:6px 6px 2px 2px;background:var(--sub);overflow:hidden}
+.tw i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#60a5fa,#2563eb);transition:height .8s}
+.tw::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 12px,#ffffff59 12px 20px),repeating-linear-gradient(90deg,transparent 0 22px,#ffffff59 22px 28px)}
+.cr{position:absolute;left:50%;transform:translateX(-50%);font-size:28px;transition:bottom .8s;margin-bottom:6px}
+body{background:radial-gradient(#ffffff2e 1.2px,transparent 1.3px) 0 0/22px 22px,linear-gradient(135deg,#2f6df0,#1e40af 55%,#6d3fa8) fixed}
+:root[data-t=d] body{background:radial-gradient(#ffffff14 1.2px,transparent 1.3px) 0 0/22px 22px,linear-gradient(135deg,#0b1020,#16224a) fixed}
 @media(max-width:1100px){.grid{grid-template-columns:1fr 1fr}}
-@media(max-width:760px){body{display:block}aside{display:none}main{padding:12px}.grid{grid-template-columns:1fr}.s2{grid-column:auto}.big{font-size:34px}.top h1{font-size:20px}}
+@media(max-width:760px){body{display:block}aside{flex-direction:row;width:auto;height:auto;position:static;margin:8px;padding:10px;overflow-x:auto;align-items:center}aside .lg,aside .sp,aside .sec,#sy{display:none}aside a,aside button{white-space:nowrap}main{padding:12px}.grid{grid-template-columns:1fr}.s2,.s3{grid-column:auto}.big{font-size:34px}.top h1{font-size:20px}}
 </style>
 </head>
 <body class="lock">
@@ -65,22 +77,26 @@ body.lock{align-items:center;justify-content:center}body.lock #lg{display:block}
  <button style="width:100%;margin-top:8px;border:0;background:none;color:var(--mu)" onclick="resetPw()">Esqueci a senha</button>
 </div>
 <aside>
- <b>Minhas Finanças</b>
- <a class="on">Visão geral</a>
- <a onclick="openSet()">Ajustes e backup</a>
+ <div class="lg" style="display:flex;gap:10px;align-items:center;margin-bottom:14px"><span class="av">G</span><div><b style="display:block;margin:0">Minhas Finanças</b><span class="mu">Finanças pessoais</span></div></div>
+ <div class="mu sec">Menu</div>
+ <a id="n-home" class="on" onclick="nav('home')">Visão geral</a>
+ <a id="n-apt" onclick="nav('apt')">Apartamento (obra)</a>
  <a onclick="openCard()">Novo cartão</a>
- <div style="flex:1"></div>
+ <a id="n-demo" onclick="toggleDemo()">Modelo (dados fictícios)</a>
+ <a onclick="openSet()">Ajustes e backup</a>
+ <div class="sp" style="flex:1"></div>
  <div class="mu" id="sy" style="padding:0 4px"></div>
  <button onclick="toggleTheme()">Tema claro/escuro</button>
  <button onclick="logout()">Sair</button>
 </aside>
 <main>
  <div class="top">
-  <button onclick="mv(-1)" aria-label="Mês anterior">‹</button><button onclick="mv(1)" aria-label="Próximo mês">›</button>
+  <span id="nv"><button onclick="mv(-1)" aria-label="Mês anterior">‹</button> <button onclick="mv(1)" aria-label="Próximo mês">›</button></span>
   <h1 id="mo"></h1><span class="mu" id="sy2"></span>
-  <button class="pri" onclick="openItem()">+ Lançar</button><button onclick="logout()" aria-label="Sair">Sair</button>
+  <button class="pri" id="bl" onclick="pg=='home'?openItem():openParc()">+ Lançar</button><button onclick="logout()" aria-label="Sair">Sair</button>
  </div>
- <div class="grid" id="g"></div>
+ <div id="db" class="demo" style="display:none"><span>Modo modelo: dados fictícios para você conhecer o app. Nada disso é salvo.</span><button onclick="toggleDemo()">Sair do modelo</button></div>
+ <div class="grid" id="g"></div><div class="grid" id="ap" style="display:none"></div>
 </main>
 
 <dialog id="dI"><h3 id="dIt">Novo lançamento</h3>
@@ -108,14 +124,38 @@ body.lock{align-items:center;justify-content:center}body.lock #lg{display:block}
  <div class="acts" style="justify-content:space-between"><div><button onclick="exp()">Baixar backup</button> <button onclick="imp.click()">Restaurar</button><input id="imp" type="file" accept=".json" hidden></div><button class="pri" onclick="saveSet()">Salvar</button></div>
 </dialog>
 
+<input id="fi" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" hidden>
+<dialog id="dA"><h3>Dados do apartamento</h3>
+ <label>Nome do empreendimento<input id="an"></label>
+ <label>Construtora<input id="ac"></label>
+ <label>Endereço / unidade<input id="ae"></label>
+ <label>Valor total do imóvel (R$)<input id="av" type="number" step="0.01"></label>
+ <label>Data do contrato<input id="ao" type="date"></label>
+ <label>Previsão de entrega<input id="at" type="date"></label>
+ <div class="acts"><button onclick="dA.close()">Cancelar</button><button class="pri" onclick="saveInfo()">Salvar</button></div>
+</dialog>
+<dialog id="dP"><h3>Parcela</h3>
+ <label>Pago a quem<select id="qt"><option value="c">Construtora</option><option value="x">Caixa (financiamento)</option></select></label>
+ <label>Descrição (ex.: Sinal, Mensal, Intermediária, Juros de obra)<input id="qn"></label>
+ <label>Vencimento<input id="qv" type="date"></label>
+ <label>Valor da parcela (R$)<input id="ql" type="number" step="0.01" min="0"></label>
+ <label>Juros / multa (R$)<input id="qj" type="number" step="0.01" min="0"></label>
+ <label style="display:flex;gap:8px;align-items:center"><input id="qk" type="checkbox" style="width:auto;margin:0"> Já está paga</label>
+ <label>Data do pagamento<input id="qd" type="date"></label>
+ <label>Comprovante (opcional)<input id="qf" type="file" accept="image/*,.pdf"></label>
+ <label id="qrw">Repetir por quantos meses?<input id="qr" type="number" min="1" max="120" value="1"></label>
+ <div class="acts"><button id="qdx" onclick="delParc()">Excluir</button><button onclick="dP.close()">Cancelar</button><button class="pri" onclick="saveParc()">Salvar</button></div>
+</dialog>
+
 <script>
 const $=s=>document.getElementById(s),R=v=>(+v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const CATS={'Moradia':'#1e3a8a','Contas fixas':'#2563eb','Alimentação':'#f59e0b','Transporte':'#8b5cf6','Saúde':'#14b8a6','Lazer':'#ec4899','Cartão':'#64748b','Reserva':'#16a34a','Outros':'#94a3b8'};
 let S;try{S=JSON.parse(localStorage.getItem('fin'))}catch(e){}
 S=S||{salary:0,items:[],cards:[],paid:{},theme:'l'};
-const save=()=>{try{localStorage.setItem('fin',JSON.stringify(S))}catch(e){}window.cloudSave&&window.cloudSave()};
-function getData(){return S}
+let pg='home',demo=false,REAL=null;
+const save=()=>{if(demo)return;try{localStorage.setItem('fin',JSON.stringify(S))}catch(e){}window.cloudSave&&window.cloudSave()};
+function getData(){return demo?REAL:S}
 function setData(o){S=o;document.documentElement.dataset.t=S.theme||'l';try{localStorage.setItem('fin',JSON.stringify(S))}catch(e){}}
 let d=new Date(),M=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),day=null,eid=null,ecard=null;
 const add=(m,n)=>{let[y,mm]=m.split('-').map(Number);mm+=n;y+=Math.floor((mm-1)/12);mm=((mm-1)%12+12)%12+1;return y+'-'+String(mm).padStart(2,'0')};
@@ -125,39 +165,44 @@ const sum=a=>a.reduce((t,x)=>t+x,0);
 const inM=(i,m)=>i.rec?(i.start<=m&&(!i.end||i.end>=m)):i.m==m;
 const parc=(i,m)=>i.rec&&i.n?(diff(i.start,m)+1)+'/'+i.n:'';
 function render(){
- const its=S.items.filter(i=>inM(i,M)),des=its.filter(i=>i.t=='d'),rec=its.filter(i=>i.t=='r');
+ $('n-home').className=pg=='home'?'on':'';$('n-apt').className=pg=='apt'?'on':'';$('n-demo').className=demo?'on':'';
+ $('db').style.display=demo?'':'none';$('nv').style.display=pg=='home'?'':'none';
+ $('g').style.display=pg=='home'?'':'none';$('ap').style.display=pg=='apt'?'':'none';$('bl').textContent=pg=='home'?'+ Lançar':'+ Parcela';
+ if(pg=='apt'){renderApt();return}
+ const its=S.items.filter(i=>inM(i,M)).concat(vparc(M)),des=its.filter(i=>i.t=='d'),rec=its.filter(i=>i.t=='r');
  const extra=sum(rec.map(i=>i.v)),inc=S.salary+extra,gasto=sum(des.map(i=>i.v)),sobra=inc-gasto;
  const [y,mm]=M.split('-'),nm=new Date(y,mm-1,1).toLocaleDateString('pt-BR',{month:'long'});
  $('mo').innerHTML=nm[0].toUpperCase()+nm.slice(1)+' <span>'+y+'</span>';
  const bc=Object.keys(CATS).map(k=>[k,sum(des.filter(i=>i.k==k).map(i=>i.v))]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
  const p=v=>inc>0?Math.max(0,v/inc*100):0;
- let h=`<section class="c s2"><h3>Saldo previsto</h3>
+ let h=`<section class="c s2"><span class="ic">👛</span><h3>Saldo previsto</h3>
  <div class="big">${R(sobra).replace(/,(\d+)$/,'<small>,$1</small>')}</div>
  <div class="mu">${inc>0?Math.round(sobra/inc*100)+'% da renda livre · estimado após pagar todas as contas':'Informe seu salário em Ajustes para começar'}</div>
  <div class="bar">${bc.map(([k,v])=>`<i style="width:${p(v)}%;background:${CATS[k]}"></i>`).join('')}<i style="width:${p(sobra)}%;background:var(--gr)"></i></div>
  <div class="legend"><span>Renda<b>${R(inc)}</b></span><span>Despesas<b>${R(gasto)}</b></span>${extra?`<span>Receitas extras<b>${R(extra)}</b></span>`:''}<span style="color:var(--gr)"><i class="dot" style="background:var(--gr)"></i>Sobra<b style="color:var(--gr)">${R(sobra)}</b></span></div></section>`;
  const days=[...new Set(its.map(i=>i.y).filter(Boolean))].sort((a,b)=>a-b);
  const lst=its.filter(i=>!day||i.y==day).sort((a,b)=>(a.y||99)-(b.y||99));
- const pk=i=>i.id+'_'+M,pend=sum(des.filter(i=>!S.paid[pk(i)]).map(i=>i.v));
- h+=`<section class="c" style="grid-row:span 2"><h3>Contas a pagar</h3><div class="mid">${R(pend)}</div><div class="mu">${des.filter(i=>S.paid[pk(i)]).length} de ${des.length} pagas · falta pagar</div>
- <div class="chips"><button class="chip ${!day?'on':''}" onclick="day=null;render()">Todos</button>${days.map(x=>`<button class="chip ${day==x?'on':''}" onclick="day=${x};render()">${String(x).padStart(2,'0')}</button>`).join('')}</div>
- ${lst.length?lst.map(i=>`<div class="row ${S.paid[pk(i)]?'p':''}"><button class="chk ${S.paid[pk(i)]?'on':''}" onclick="tg('${pk(i)}')" aria-label="${i.t=='d'?'Marcar como paga':'Marcar como recebida'}"></button><span style="flex:1" onclick="openItem(${i.id})"><span class="t">${esc(i.d)}</span>${i.rec?`<span class="tag">↻ ${parc(i,M)||'mensal'}</span>`:''}<div class="mu">${i.y?'dia '+i.y+' · ':''}${i.k}</div></span><b style="color:${i.t=='r'?'var(--gr)':'inherit'}" onclick="openItem(${i.id})">${i.t=='r'?'+':''}${R(i.v)}</b></div>`).join(''):'<div class="empty">Nada lançado. Toque em “+ Lançar”.</div>'}</section>`;
+ const pk=i=>i.id+'_'+M,pend=sum(des.filter(i=>!isP(i)).map(i=>i.v));
+ h+=`<section class="c" style="grid-row:span 2"><span class="ic">📅</span><h3>Contas a pagar</h3><div class="mid">${R(pend)}</div><div class="mu">${des.filter(i=>isP(i)).length} de ${des.length} pagas · falta pagar</div>
+ <div class="chips"><button class="chip ${!day?'on':''}" onclick="day=null;render()">Todos</button>${days.map(x=>`<button class="chip ${day==x?'on':''}" onclick="day=${x};render()">${String(x).padStart(2,'0')}<div class="dt">${'•'.repeat(Math.min(5,its.filter(i=>i.y==x).length))}</div></button>`).join('')}</div>
+ ${lst.length?lst.map(i=>`<div class="row ${isP(i)?'p':''}"><button class="chk ${isP(i)?'on':''}" onclick="tg('${pk(i)}')" aria-label="${i.t=='d'?'Marcar como paga':'Marcar como recebida'}"></button><span style="flex:1" onclick="${i.pid?`nav('apt')`:`openItem(${i.id})`}"><span class="t">${esc(i.d)}</span>${i.rec?`<span class="tag">↻ ${parc(i,M)||'mensal'}</span>`:''}<div class="mu">${i.y?'dia '+i.y+' · ':''}${i.k}</div></span><b style="color:${i.t=='r'?'var(--gr)':'inherit'}" onclick="${i.pid?`nav('apt')`:`openItem(${i.id})`}">${i.t=='r'?'+':''}${R(i.v)}</b></div>`).join(''):'<div class="empty">Nada lançado. Toque em “+ Lançar”.</div>'}</section>`;
  h+=`<section class="c"><h3>Gastos por categoria</h3>${bc.length?bc.map(([k,v])=>`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between"><span><i class="dot" style="background:${CATS[k]}"></i>${k}</span><b>${R(v)} <span class="mu">${gasto?Math.round(v/gasto*100):0}%</span></b></div><div class="cb"><i style="width:${v/gasto*100}%;background:${CATS[k]}"></i></div></div>`).join(''):'<div class="empty">Sem despesas neste mês.</div>'}</section>`;
  const fat=(id,m)=>sum(S.items.filter(i=>i.t=='d'&&i.c==id&&inM(i,m)).map(i=>i.v));
- h+=`<section class="c"><h3>Cartões</h3><div class="mu">Fatura de ${nm}</div><div class="mid">${R(sum(S.cards.map(k=>fat(k.id,M))))}</div>
+ h+=`<section class="c"><span class="ic">💳</span><h3>Cartões</h3><div class="mu">Fatura de ${nm}</div><div class="mid">${R(sum(S.cards.map(k=>fat(k.id,M))))}</div>
  <div class="cards">${S.cards.length?S.cards.map(k=>`<div class="cc" style="background:${k.cor}" onclick="openCard(${k.id})"><b>${esc(k.n)}</b><div><span>Fatura<br><b>${R(fat(k.id,M))}</b></span><span>Vence dia ${k.dia||'-'}<br>Limite livre ${R(k.lim-fat(k.id,M))}</span></div></div>`).join(''):'<div class="empty">Cadastre um cartão em “Novo cartão”.</div>'}</div>
  <div class="mu" style="margin-top:12px">Próximas faturas</div><div class="nx">${[0,1,2].map(n=>{const m2=add(M,n),[a,b]=m2.split('-');return`<div><b>${new Date(a,b-1,1).toLocaleDateString('pt-BR',{month:'short'})}</b><br>${R(sum(S.cards.map(k=>fat(k.id,m2))))}</div>`}).join('')}</div></section>`;
  const mor=sum(des.filter(i=>i.k=='Moradia').map(i=>i.v)),pct=inc?mor/inc*100:0,col=pct>30?'var(--rd)':'var(--gr)';
- h+=`<section class="c"><h3>Moradia</h3><div class="mu">Quanto você gasta pra morar</div><div class="mid">${R(mor)}</div>
+ h+=`<section class="c"><span class="ic">🏠</span><h3>Moradia</h3><div class="mu">Quanto você gasta pra morar</div><div class="mid">${R(mor)}</div>
  <div class="mu" style="color:${col}">${pct.toFixed(0)}% da renda · referência: até 30%</div>
  <div class="ref"><i style="width:${Math.min(100,pct/60*100)}%;background:${col}"></i><u></u></div><div class="mu" style="display:flex;justify-content:space-between"><span>0%</span><span>60%</span></div></section>`;
  const rs=sum(des.filter(i=>i.k=='Reserva').map(i=>i.v)),acc=sum(S.items.filter(i=>i.t=='d'&&i.k=='Reserva').map(i=>i.rec?Math.max(0,Math.min(diff(i.start,M)+1,i.end?diff(i.start,i.end)+1:99999))*i.v:(i.m<=M?i.v:0)));
  h+=`<section class="c"><h3>Reserva</h3><div class="mu">Guardado neste mês</div><div class="mid">${R(rs)}</div><div class="mu">${inc?Math.round(rs/inc*100):0}% da renda · acumulado até aqui (categoria Reserva): <b>${R(acc)}</b></div></section>`;
  const rl=S.items.filter(i=>i.rec).sort((a,b)=>a.d.localeCompare(b.d));
- h+=`<section class="c s2"><h3>Recorrentes e parcelados</h3>${rl.length?rl.map(i=>`<div class="row" onclick="openItem(${i.id})"><span>${esc(i.d)}<span class="tag">${i.k}</span><div class="mu">desde ${i.start.split('-').reverse().join('/')}${i.end?' · até '+i.end.split('-').reverse().join('/'):' · sem fim'}${i.n?' · '+i.n+' parcelas':''}</div></span><b style="color:${i.t=='r'?'var(--gr)':'inherit'}">${R(i.v)}</b></div>`).join(''):'<div class="empty">Lance algo com repetição “Todo mês” ou “Parcelado” e ele aparece aqui.</div>'}</section>`;
+ h+=`<section class="c s2"><h3>Recorrentes e parcelados</h3>${rl.length?rl.map(i=>`<div class="row" onclick="${i.pid?`nav('apt')`:`openItem(${i.id})`}"><span>${esc(i.d)}<span class="tag">${i.k}</span><div class="mu">desde ${i.start.split('-').reverse().join('/')}${i.end?' · até '+i.end.split('-').reverse().join('/'):' · sem fim'}${i.n?' · '+i.n+' parcelas':''}</div></span><b style="color:${i.t=='r'?'var(--gr)':'inherit'}">${R(i.v)}</b></div>`).join(''):'<div class="empty">Lance algo com repetição “Todo mês” ou “Parcelado” e ele aparece aqui.</div>'}</section>`;
+ {const q=aptStats(),I=q.a.info;h+=`<section class="c s3" onclick="nav('apt')" style="cursor:pointer"><span class="ic">🚧</span><h3>Obra (${esc(I.nome||'Apartamento')})</h3><div class="mid">${q.pct}% concluída</div><div class="mu">${q.prox?'Próxima parcela: '+esc(q.prox.n)+' · '+fdt(q.prox.v)+' · '+R(q.tot(q.prox)):'Toque para cadastrar o apartamento, a obra e as parcelas'}${q.atr.length?` · <b style="color:var(--rd)">${q.atr.length} atrasada(s)</b>`:''}</div></section>`}
  $('g').innerHTML=h;
 }
-const tg=k=>{S.paid[k]=!S.paid[k];save();render()};
+const tg=k=>{if(k[0]=='p'){tgP(+k.split('_')[0].slice(1));return}S.paid[k]=!S.paid[k];save();render()};
 function openItem(id){
  eid=id||null;const i=id?S.items.find(x=>x.id==id):{d:'',v:'',t:'d',k:'Outros',y:'',c:''};
  $('dIt').textContent=id?'Editar lançamento':'Novo lançamento';
@@ -199,6 +244,81 @@ async function resetPw(){const e=$('lu').value.trim();if(!e){$('er').textContent
 function logout(){window.fbLogout().then(()=>location.reload())}
 $('lp').addEventListener('keydown',e=>{if(e.key=='Enter')login()});
 $('lu').addEventListener('keydown',e=>{if(e.key=='Enter')$('lp').focus()});
+
+const iso=t=>t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+const today=()=>iso(new Date());
+const fdt=x=>x?x.split('-').reverse().join('/'):'';
+const addm=(x,n)=>{const[y,m,dd]=x.split('-').map(Number),t=new Date(y,m-1+n,1);t.setDate(Math.min(dd,new Date(t.getFullYear(),t.getMonth()+1,0).getDate()));return iso(t)};
+const A=()=>S.apt||(S.apt={info:{},obra:[],parc:[],docs:[]});
+const nav=x=>{pg=x;day=null;render()};
+function vparc(m){return(S.apt&&S.apt.parc||[]).filter(p=>p.v.slice(0,7)==m).map(p=>({id:'p'+p.id,pid:p.id,d:(p.tp=='c'?'Construtora ':'Caixa ')+p.n,v:p.val+(p.jur||0),t:'d',k:'Moradia',y:+p.v.slice(8),paid:p.pg}))}
+const isP=i=>i.pid?!!i.paid:!!S.paid[i.id+'_'+M];
+function aptStats(){const a=A(),T=today(),ob=[...a.obra].sort((x,y)=>x.d.localeCompare(y.d)),P=a.parc,tot=p=>p.val+(p.jur||0),st=p=>p.pg?'Paga':p.v<T?'Atrasada':'Pendente';
+ return{a,ob,pct:ob.length?ob[ob.length-1].p:0,P,tot,st,pago:sum(P.filter(p=>p.pg).map(tot)),aber:sum(P.filter(p=>!p.pg).map(tot)),atr:P.filter(p=>st(p)=='Atrasada'),jur:sum(P.map(p=>p.jur||0)),prox:P.filter(p=>!p.pg).sort((x,y)=>x.v.localeCompare(y.v))[0]}}
+function renderApt(){
+ const q=aptStats(),{a,ob,pct,P,tot,st,pago,aber,atr,jur,prox}=q,I=a.info;
+ $('mo').innerHTML='Apartamento <span>obra e financiamento</span>';
+ const dias=I.ent?Math.ceil((new Date(I.ent)-new Date())/864e5):null,col=x=>x=='Paga'?'var(--gr)':x=='Atrasada'?'var(--rd)':'var(--mu)';
+ const lst=tp=>{const L=P.filter(p=>p.tp==tp).sort((x,y)=>x.v.localeCompare(y.v)),sm=f=>sum(L.filter(f).map(tot));
+  return`<div class="mid">${R(sm(p=>!p.pg))}</div><div class="mu">a pagar · pago ${R(sm(p=>p.pg))}${L.some(p=>st(p)=='Atrasada')?` · <b style="color:var(--rd)">atrasado ${R(sm(p=>st(p)=='Atrasada'))}</b>`:''}</div>
+ <div style="max-height:360px;overflow:auto;margin-top:8px">${L.length?L.map(p=>`<div class="row ${p.pg?'p':''}"><button class="chk ${p.pg?'on':''}" onclick="tgP(${p.id})" aria-label="Marcar como paga"></button><span style="flex:1" onclick="openParc(null,${p.id})"><span class="t">${esc(p.n)}</span><span class="tag" style="color:${col(st(p))}">${st(p)}</span><div class="mu">vence ${fdt(p.v)}${p.jur?' · juros/multa '+R(p.jur):''}${p.pg&&p.pgd?' · pago em '+fdt(p.pgd):''}</div></span>${p.doc?`<button style="padding:2px 6px" onclick="openDoc(${p.doc})" aria-label="Ver comprovante">📎</button>`:''}<b>${R(tot(p))}</b></div>`).join(''):'<div class="empty">Nenhuma parcela cadastrada.</div>'}</div>
+ <button style="margin-top:10px;width:100%" onclick="openParc('${tp}')">+ Adicionar parcelas</button>`};
+ let h=`<section class="c s2" style="display:flex;gap:24px;flex-wrap:wrap"><div class="twp"><b class="cr" style="bottom:${pct*2}px">🏗️</b><div class="tw"><i style="height:${pct}%"></i></div></div>
+ <div style="flex:1;min-width:240px"><h3>${esc(I.nome||'Meu apartamento')}</h3><div class="mu">${esc(I.cons||'Cadastre a construtora em “Editar dados”')}${I.end?' · '+esc(I.end):''}</div>
+ <div class="big" style="margin-top:8px">${pct}<small>% da obra</small></div>
+ <div class="mu">${dias==null?'Defina a previsão de entrega':dias>=0?'Entrega prevista em '+fdt(I.ent)+' · faltam '+dias+' dias':'Entrega prevista em '+fdt(I.ent)+' · passou há '+(-dias)+' dias'}</div>
+ <div class="legend" style="margin:14px 0"><span>Valor do imóvel<b>${R(I.val)}</b></span><span>Pago<b style="color:var(--gr)">${R(pago)}</b></span><span>A pagar<b>${R(aber)}</b></span><span>Atrasadas<b style="color:${atr.length?'var(--rd)':'inherit'}">${atr.length} · ${R(sum(atr.map(tot)))}</b></span><span>Juros/multas<b>${R(jur)}</b></span></div>
+ <div class="mu">${prox?'Próxima parcela: '+esc(prox.n)+' ('+(prox.tp=='c'?'construtora':'Caixa')+') · '+fdt(prox.v)+' · '+R(tot(prox)):''}</div>
+ <div class="acts" style="justify-content:flex-start"><button onclick="openInfo()">Editar dados</button><button class="pri" onclick="addObra()">+ Atualizar % da obra</button></div></div></section>`;
+ const pts=ob.map((o,i)=>[ob.length>1?i/(ob.length-1)*280+10:150,70-o.p*.6]);
+ h+=`<section class="c"><h3>Evolução da obra</h3>${ob.length>1?`<svg viewBox="0 0 300 80" width="100%" role="img" aria-label="Gráfico da evolução da obra"><polyline fill="none" stroke="var(--bl)" stroke-width="2.5" points="${pts.map(x=>x.join(',')).join(' ')}"/>${pts.map(x=>`<circle cx="${x[0]}" cy="${x[1]}" r="3.5" fill="var(--bl)"/>`).join('')}</svg>`:''}
+ ${ob.length?[...ob].reverse().map(o=>`<div class="row" onclick="delObra(${o.id})"><span>${fdt(o.d)}<div class="mu">${esc(o.o||'')}</div></span><b>${o.p}%</b></div>`).join(''):'<div class="empty">Registre o % do boletim da construtora e o prédio vai subindo.</div>'}</section>`;
+ h+=`<section class="c"><h3>Construtora</h3>${lst('c')}</section><section class="c"><h3>Caixa (financiamento)</h3>${lst('x')}</section>`;
+ h+=`<section class="c"><h3>Documentos e comprovantes</h3><div style="display:flex;gap:6px"><select id="dcat" style="flex:1;padding:8px;border-radius:9px;border:1px solid var(--ln);background:var(--bg);color:var(--tx)">${['Planta','Contrato','Comprovante','Boletim de obra','Vistoria','Outro'].map(c=>`<option>${c}</option>`).join('')}</select><button class="pri" onclick="fi.click()">Anexar</button></div>
+ <div class="mu" style="margin:8px 0">Os arquivos ficam guardados só neste aparelho (não vão para a nuvem).</div>
+ ${a.docs.length?a.docs.map(x=>`<div class="row"><span style="flex:1" onclick="openDoc(${x.id})">${/image/.test(x.ty||'')?'🖼️':'📄'} ${esc(x.n)}<div class="mu">${x.cat} · ${fdt(x.d)}</div></span><button style="padding:2px 8px" onclick="delDoc(${x.id})" aria-label="Excluir documento">×</button></div>`).join(''):'<div class="empty">Anexe a planta, o contrato e os comprovantes.</div>'}</section>`;
+ $('ap').innerHTML=h;
+}
+function addObra(){const p=parseFloat(String(prompt('% da obra concluída agora (0 a 100):','')||'').replace(',','.'));if(!(p>=0&&p<=100))return;
+ const dt=prompt('Data do boletim (AAAA-MM-DD):',today());if(!/^\d{4}-\d{2}-\d{2}$/.test(dt||''))return;const o=prompt('Observação (opcional):','')||'';
+ A().obra.push({id:Date.now(),d:dt,p,o});save();render()}
+function delObra(id){if(confirm('Excluir este registro de evolução?')){A().obra=A().obra.filter(x=>x.id!=id);save();render()}}
+function openInfo(){const I=A().info;$('an').value=I.nome||'';$('ac').value=I.cons||'';$('ae').value=I.end||'';$('av').value=I.val||'';$('at').value=I.ent||'';$('ao').value=I.con||'';$('dA').showModal()}
+function saveInfo(){A().info={nome:$('an').value.trim(),cons:$('ac').value.trim(),end:$('ae').value.trim(),val:+$('av').value||0,ent:$('at').value,con:$('ao').value};save();$('dA').close();render()}
+let eP=null;
+function openParc(tp,id){eP=id||null;const p=id?A().parc.find(x=>x.id==id):{tp:tp||'c',n:'',v:today(),val:'',jur:'',pg:false,pgd:''};
+ $('qt').value=p.tp;$('qn').value=p.n;$('qv').value=p.v;$('ql').value=p.val;$('qj').value=p.jur||'';$('qk').checked=!!p.pg;$('qd').value=p.pgd||'';$('qf').value='';$('qr').value=1;
+ $('qrw').style.display=id?'none':'';$('qdx').style.display=id?'':'none';$('dP').showModal()}
+async function saveParc(){const val=parseFloat($('ql').value);if(!(val>=0)||!$('qv').value){$('ql').focus();return}
+ const b={tp:$('qt').value,v:$('qv').value,val,jur:+$('qj').value||0,pg:$('qk').checked,pgd:$('qd').value||($('qk').checked?today():'')},base=$('qn').value.trim()||'Parcela',f=$('qf').files[0];
+ let did=null;if(f&&!demo){did=Date.now();await fput(did,f);A().docs.push({id:did,n:f.name,cat:'Comprovante',sz:f.size,ty:f.type,d:today()})}
+ if(eP){const p=A().parc.find(x=>x.id==eP);Object.assign(p,b,{n:base});if(did)p.doc=did}
+ else{const n=Math.max(1,Math.min(120,+$('qr').value||1));for(let i=0;i<n;i++)A().parc.push({...b,id:Date.now()+i,n:n>1?base+' '+(i+1)+'/'+n:base,v:addm(b.v,i),pg:i?false:b.pg,pgd:i?'':b.pgd,doc:i?undefined:(did||undefined)})}
+ save();$('dP').close();render()}
+function tgP(id){const p=A().parc.find(x=>x.id==id);p.pg=!p.pg;p.pgd=p.pg?today():'';save();render()}
+function delParc(){if(confirm('Excluir esta parcela?')){A().parc=A().parc.filter(x=>x.id!=eP);save();$('dP').close();render()}}
+const idb=()=>new Promise((r,j)=>{const q=indexedDB.open('finfiles',1);q.onupgradeneeded=()=>q.result.createObjectStore('f');q.onsuccess=()=>r(q.result);q.onerror=j});
+const fput=async(k,b)=>{const d=await idb();return new Promise(r=>{const t=d.transaction('f','readwrite');t.objectStore('f').put(b,k);t.oncomplete=r})};
+const fget=async k=>{const d=await idb();return new Promise(r=>{const q=d.transaction('f').objectStore('f').get(k);q.onsuccess=()=>r(q.result)})};
+const fdel=async k=>{const d=await idb();d.transaction('f','readwrite').objectStore('f').delete(k)};
+$('fi').onchange=async e=>{if(demo){alert('No modo modelo não é possível anexar arquivos.');e.target.value='';return}const cat=$('dcat').value;let i=0;
+ for(const f of e.target.files){const id=Date.now()+i++;await fput(id,f);A().docs.push({id,n:f.name,cat,sz:f.size,ty:f.type,d:today()})}e.target.value='';save();render()};
+async function openDoc(id){if(demo){alert('Arquivo de exemplo.');return}const w=window.open('','_blank');const b=await fget(id);
+ if(!b){if(w)w.close();alert('Este arquivo foi anexado em outro aparelho e não está disponível aqui.');return}if(w)w.location=URL.createObjectURL(b)}
+async function delDoc(id){if(confirm('Excluir este documento?')){A().docs=A().docs.filter(x=>x.id!=id);if(!demo)await fdel(id);save();render()}}
+function DEMO(){const a=add(M,-3);let q=1;
+ const mk=(tp,base,n,first,val,pgN,off)=>Array.from({length:n},(_,i)=>({id:off+i,tp,n:base+' '+(i+1)+'/'+n,v:addm(first,i),val,jur:0,pg:i<pgN}));
+ const r=(d,v,k,y,o={})=>({id:q++,d,v,k,y,t:'d',c:'',rec:true,start:a,end:'',n:0,...o});
+ const pc=mk('c','Mensal',24,a+'-10',4200,2,100);pc[2].jur=86.4;
+ return{salary:18000,theme:S.theme,paid:{},cards:[{id:1,n:'Nubank Ultravioleta',dia:10,lim:15000,cor:'#6d28d9'},{id:2,n:'Itaú Black',dia:5,lim:20000,cor:'#ea580c'}],
+ items:[r('Aluguel',2400,'Moradia',5),r('Internet',129.9,'Contas fixas',10),r('Energia',170,'Contas fixas',12),r('Plano de saúde',480,'Saúde',15),r('Academia',120,'Saúde',3,{c:1}),
+ r('Streaming',55.9,'Lazer',8,{c:1}),r('Mercado',1800,'Alimentação',8,{c:2}),r('Transporte',450,'Transporte',20),r('Guardar na reserva',1500,'Reserva',6),
+ r('Notebook',350,'Outros',10,{c:2,end:add(a,9),n:10}),{id:q++,d:'Freela de design',v:800,k:'Outros',y:18,t:'r',c:'',m:M}],
+ apt:{info:{nome:'Residencial Vila Olímpia',cons:'Construtora Exemplo',end:'Vila Olímpia, São Paulo · Apto 82',val:640000,con:a+'-02',ent:addm(M+'-28',14)},
+ obra:[12,24,38,47].map((p,i)=>({id:900+i,d:addm(a+'-05',i),p,o:['Fundação concluída','Estrutura até o 6º andar','Alvenaria em andamento','Instalações e reboco'][i]})),
+ parc:[...pc,...mk('x','Juros de obra',12,a+'-01',2332.54,3,200)],
+ docs:[{id:1,n:'Contrato de compra e venda.pdf',cat:'Contrato',ty:'application/pdf',d:a+'-02'},{id:2,n:'Planta tipo 62m².pdf',cat:'Planta',ty:'application/pdf',d:a+'-02'},{id:3,n:'Comprovante parcela 01.pdf',cat:'Comprovante',ty:'application/pdf',d:a+'-10'}]}}}
+function toggleDemo(){if(!demo){REAL=S;S=DEMO();demo=true}else{S=REAL;REAL=null;demo=false}render()}
 </script>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
