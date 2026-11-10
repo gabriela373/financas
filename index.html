@@ -46,11 +46,24 @@ label{display:block;font-size:12px;color:var(--mu);margin-top:10px}
 dialog input,dialog select{width:100%;padding:9px;border:1px solid var(--ln);border-radius:9px;background:var(--bg);margin-top:3px}
 .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
 .empty{color:var(--mu);padding:14px 0;text-align:center;font-size:13px}
+body.lock aside,body.lock main{display:none}
+#lg{display:none;margin:auto;width:min(380px,92vw);background:var(--card);border-radius:20px;padding:28px;box-shadow:0 20px 60px #0002}
+body.lock{align-items:center;justify-content:center}body.lock #lg{display:block}
+#lg h2{font-size:22px;margin-bottom:4px}#lg input{width:100%;padding:11px;border:1px solid var(--ln);border-radius:10px;background:var(--bg);margin-top:4px}
+#lg .pri{width:100%;padding:11px;margin-top:16px}#er{color:var(--rd);font-size:12px;min-height:16px;margin-top:8px}
 @media(max-width:1100px){.grid{grid-template-columns:1fr 1fr}}
 @media(max-width:760px){body{display:block}aside{display:none}main{padding:12px}.grid{grid-template-columns:1fr}.s2{grid-column:auto}.big{font-size:34px}.top h1{font-size:20px}}
 </style>
 </head>
-<body>
+<body class="lock">
+<div id="lg" role="dialog" aria-label="Entrar">
+ <h2>Minhas Finanças</h2><div class="mu">Entre para acessar seus dados</div>
+ <label for="lu">Usuário</label><input id="lu" autocomplete="username" autocapitalize="none">
+ <label for="lp" style="margin-top:12px">Senha</label><input id="lp" type="password" autocomplete="current-password">
+ <label style="display:flex;gap:8px;align-items:center"><input id="lk" type="checkbox" checked style="width:auto;margin:0"> Manter conectado neste aparelho</label>
+ <div id="er" aria-live="polite"></div>
+ <button class="pri" onclick="login()">Entrar</button>
+</div>
 <aside>
  <b>Minhas Finanças</b>
  <a class="on">Visão geral</a>
@@ -58,12 +71,13 @@ dialog input,dialog select{width:100%;padding:9px;border:1px solid var(--ln);bor
  <a onclick="openCard()">Novo cartão</a>
  <div style="flex:1"></div>
  <button onclick="toggleTheme()">Tema claro/escuro</button>
+ <button onclick="logout()">Sair</button>
 </aside>
 <main>
  <div class="top">
   <button onclick="mv(-1)" aria-label="Mês anterior">‹</button><button onclick="mv(1)" aria-label="Próximo mês">›</button>
   <h1 id="mo"></h1>
-  <button class="pri" onclick="openItem()">+ Lançar</button>
+  <button class="pri" onclick="openItem()">+ Lançar</button><button onclick="logout()" aria-label="Sair">Sair</button>
  </div>
  <div class="grid" id="g"></div>
 </main>
@@ -170,7 +184,20 @@ function saveSet(){S.salary=+$('s1').value||0;save();$('dS').close();render()}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='financas-backup.json';a.click()}
 $('imp').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{S=JSON.parse(t);save();$('dS').close();render()}catch(x){alert('Arquivo inválido')}})};
 function toggleTheme(){S.theme=S.theme=='d'?'l':'d';document.documentElement.dataset.t=S.theme;save()}
-document.documentElement.dataset.t=S.theme;render();
+document.documentElement.dataset.t=S.theme;
+const AH="eb725b382139fb78459e5080cc7a0e395d60f805a171317a9da0b9258bfc2834";
+const sha=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+const unlock=()=>{document.body.classList.remove('lock');render()};
+async function login(){
+ try{const h=await sha('duofin-salt-v1|'+$('lu').value.trim()+'|'+$('lp').value);
+  if(h===AH){const st=$('lk').checked?localStorage:sessionStorage;try{st.setItem('fin_auth',h)}catch(e){}$('lp').value='';$('er').textContent='';unlock()}
+  else $('er').textContent='Usuário ou senha incorretos.'}
+ catch(e){$('er').textContent='Seu navegador bloqueou o login. Abra o site por https.'}
+}
+function logout(){try{localStorage.removeItem('fin_auth');sessionStorage.removeItem('fin_auth')}catch(e){}location.reload()}
+$('lp').addEventListener('keydown',e=>{if(e.key=='Enter')login()});
+$('lu').addEventListener('keydown',e=>{if(e.key=='Enter')$('lp').focus()});
+try{if(localStorage.getItem('fin_auth')===AH||sessionStorage.getItem('fin_auth')===AH)unlock()}catch(e){}
 </script>
 </body>
 </html>
