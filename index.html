@@ -681,7 +681,7 @@ const Backup = {
 
 /** Carimbos por registro (updatedAt) e lápides (exclusões) — base do merge. Registros antigos ficam com 0. */
 const STAMP_PATHS = ['tx', 'cards', 'buys', 'cats', 'plan', 'workouts', 'body', 'events', 'goals', 'docs', 'programs', 'photos', 'hsamples', 'imports', 'links',
-  'apt.parc', 'apt.obra', 'apt.caixaHist', 'apt.curyHist', 'apt.fontes', 'apt.caixaLog', 'cycle.cycles', 'cycle.symptoms', 'cycle.bbt'];
+  'apt.parc', 'apt.obra', 'apt.caixaHist', 'apt.curyHist', 'apt.fontes', 'apt.caixaLog', 'apt.curyObra', 'apt.caixaObra', 'apt.curyParcHist', 'cycle.cycles', 'cycle.symptoms', 'cycle.bbt'];
 const getPath = (d, p) => p.split('.').reduce((o, k) => (o ? o[k] : undefined), d);
 const recJSON = r => { const { updatedAt, ...x } = r; return JSON.stringify(x); };
 const Stamp = {
@@ -792,7 +792,7 @@ const SETTINGS_DEF = () => ({ weekGoal: 0, name: 'Gabriela', photo: '', hideSens
 const emptyData = () => ({
   v: SCHEMA, savedAt: 0,
   tx: [], cards: [], buys: [], cats: JSON.parse(JSON.stringify(DEFAULT_CATS)), reserve: { initial: 0 },
-  apt: { info: null, obra: [], parc: [], caixa: null, caixaHist: [], curyHist: [], fontes: [], caixaLog: [] },
+  apt: { info: null, obra: [], parc: [], caixa: null, caixaHist: [], curyHist: [], fontes: [], caixaLog: [], curyObra: [], caixaObra: [], curyParcHist: [], amortGoal: null },
   plan: [], workouts: [], body: [], events: [], goals: [], docs: [],
   programs: [], photos: [], hsamples: [], imports: [], links: [], refs: {},
   cycle: { cycles: [], symptoms: [], bbt: [], summary: null },
@@ -803,7 +803,7 @@ const emptyData = () => ({
 function normalize(d) {
   const e = emptyData(); d = (d && typeof d === 'object') ? d : {};
   for (const k of Object.keys(e)) if (d[k] === undefined || d[k] === null) d[k] = e[k];
-  d.apt = Object.assign({ info: null, obra: [], parc: [], caixa: null, caixaHist: [], curyHist: [], fontes: [], caixaLog: [] }, d.apt);
+  d.apt = Object.assign({ info: null, obra: [], parc: [], caixa: null, caixaHist: [], curyHist: [], fontes: [], caixaLog: [], curyObra: [], caixaObra: [], curyParcHist: [], amortGoal: null }, d.apt);
   d.settings = Object.assign(SETTINGS_DEF(), d.settings);
   d.reserve = Object.assign({ initial: 0 }, d.reserve);
   d.cycle = Object.assign({ cycles: [], symptoms: [], bbt: [], summary: null }, d.cycle);
@@ -844,11 +844,11 @@ function loadReal() {
   if (raw) { try { obj = JSON.parse(raw); } catch (e) { Backup.keep('corrupt', raw); } }
   if (obj && typeof obj === 'object') {
     const old = (obj.v || 1) < SCHEMA, ok = old ? Backup.premig(raw) : true; // cópia exata ANTES de qualquer mudança
-    const d = normalize(obj); if (old) d.v = SCHEMA; seedRafaela(d); cleanSeedExtras(d);
+    const d = normalize(obj); if (old) d.v = SCHEMA; seedRafaela(d); cleanSeedExtras(d); seedReal2(d);
     if (ok) { const out = JSON.stringify(d); if (out !== raw) { try { localStorage.setItem(KEY, out); } catch (e) { } } }
     return d;
   }
-  const d = emptyData(); seedRafaela(d); d.seeds.fixW1 = Date.now();
+  const d = emptyData(); seedRafaela(d); d.seeds.fixW1 = Date.now(); seedReal2(d);
   if (!raw) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) { } } // dado ilegível NÃO é sobrescrito aqui
   return d;
 }
@@ -1500,7 +1500,7 @@ function cAptoMini() {
   const d = D(), af = aptFin(d), T = todayISO(), rows = a.info && D().apt.parc.filter(p => !p.paid).sort((x, y) => x.due.localeCompare(y.due)).slice(0, 4);
   return `<section class="card s4 c-half">${illus('home', 'k')}<div class="ch"><span class="ttl">Apartamento</span></div>
   <div class="lbl mt12">Valor do imóvel</div><div class="mt4">${bigMoney(a.value, 'mid tnum')}</div>
-  <div class="rowf between sm mt16"><span class="pos fw6">${ic('check', 's')} Pago ${Math.round(a.paidPct)}%</span><span class="mu">${(af.balance != null || d.apt.caixa) ? `Cury ${kfmt(af.curyToPay)} · CAIXA ${af.balance != null ? kfmt(af.balance) : '—'}` : 'referência: ' + R(a.paid)}</span></div>
+  <div class="rowf between sm mt16"><span class="pos fw6">${ic('check', 's')} Pago ${Math.round(a.paidPct)}%</span><span class="mu">${(af.balance != null || d.apt.caixa) ? `Cury ${af.curyPending != null ? kfmt(af.curyPending) : '—'} · CAIXA ${af.balance != null ? kfmt(af.balance) : '—'}` : 'referência: ' + R(a.paid)}</span></div>
   <div class="mt8">${pbar(a.paidPct, 'gr lg')}</div>
   ${a.late.length ? `<div class="rowf mt12 sm neg fw6" style="background:var(--rdS);padding:9px 12px;border-radius:11px">${ic('alert', 's')} ${a.late.length} parcela${a.late.length > 1 ? 's' : ''} atrasada${a.late.length > 1 ? 's' : ''} · ${R(sum(a.late.map(p => p.val)))}</div>` : ''}
   <div class="mk">Próximas parcelas</div>
@@ -2002,7 +2002,7 @@ function vAgenda() {
   }
   const sel = (by[S.calSel] || []);
   const up = d.events.filter(e => e.date >= T).sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''))).slice(0, 6);
-  return `<div class="grid"><section class="card s8"><div class="rowf wrap between mb8"><span class="ttl">Calendário</span><div class="fchips"><button class="fchip ${S.calCat ? '' : 'on'}" data-act="calCat" data-v="">Todos</button>${Object.keys(EV_CATS).map(c => `<button class="fchip ${S.calCat === c ? 'on' : ''}" data-act="calCat" data-v="${c}"><span class="dot" style="background:${EV_CATS[c]};margin-right:5px"></span>${c}</button>`).join('')}</div></div><div class="cal mt12">${cells}</div></section>
+  return `<div class="grid">${gcalCard()}<section class="card s8"><div class="rowf wrap between mb8"><span class="ttl">Calendário</span><div class="fchips"><button class="fchip ${S.calCat ? '' : 'on'}" data-act="calCat" data-v="">Todos</button>${Object.keys(EV_CATS).map(c => `<button class="fchip ${S.calCat === c ? 'on' : ''}" data-act="calCat" data-v="${c}"><span class="dot" style="background:${EV_CATS[c]};margin-right:5px"></span>${c}</button>`).join('')}</div></div><div class="cal mt12">${cells}</div></section>
   <div class="s4 stack gap16"><section class="card"><div class="rowf between"><span class="ttl">${WDL[parseD(S.calSel).getDay()]}, ${fshort(S.calSel)}</span><button class="btn sm pri" data-act="newEventOn" data-v="${S.calSel}">${ic('plus', 's')} Evento</button></div>
    ${sel.length ? `<div class="mt8">${sel.map(evRow).join('')}</div>` : `<div class="empty" style="padding:18px 0"><span>Nenhum evento neste dia.</span></div>`}</section>
   <section class="card"><div class="ch"><span class="ttl">Próximos compromissos</span></div>${up.length ? `<div class="mt8">${up.map(e => evRow(e)).join('')}</div>` : emptyBox('calendar', 'Nenhum compromisso próximo', 'Adicione eventos para não esquecer.', 'Novo evento', 'add', 'data-v="event"')}</section></div></div>`;
@@ -2283,6 +2283,7 @@ function planForm(id = null) {
 /* ---- agenda / metas ---- */
 function eventForm({ id = null, date = '' } = {}) {
   const d = D(), e = id ? d.events.find(x => x.id === id) : null; if (id && !e) return;
+  if (e && e.locked) { toast('Evento do Google Agenda: somente leitura aqui. Edite no Google.', 'err'); return; }
   openForm({
     title: e ? 'Editar evento' : 'Novo evento', submit: 'Salvar',
     fields: [{ k: 'title', label: 'Título', req: true }, { k: 'date', label: 'Data', type: 'date', req: true, half: true }, { k: 'time', label: 'Hora (opcional)', type: 'time', half: true }, { k: 'cat', label: 'Categoria', type: 'select', opts: Object.keys(EV_CATS) }, { k: 'notes', label: 'Observações', type: 'textarea' }],
@@ -2710,7 +2711,7 @@ function secAvalCards() {
    <div class="seg mt12" role="img" aria-label="Massa magra ${m} por cento, massa gorda ${g} por cento">${tot ? `<i style="flex:${m || 0} 1 0;background:var(--g-fitness)"></i><i style="flex:${g || 0} 1 0;background:var(--am)"></i>` : ''}</div>
    <div class="rowf wrap mt12" style="gap:8px">${clsPill(classify('gord', g, d))}${clsPill(classify('magra', m, d))}${!classify('gord', g, d) && !classify('magra', m, d) ? '<span class="xs mu">Sem classificação: configure uma faixa de referência (ou importe uma).</span>' : ''}</div>
    ${prevEv ? `<div class="lbl mt8">Avaliação anterior (${fdate(prevEv.date)}): magra ${fmtM('magra', bv(prevEv, 'magra'))} · gorda ${fmtM('gord', bv(prevEv, 'gord'))}</div>` : ''}
-   <div class="rowf wrap mt16"><button class="btn sm pri" data-act="moreData" data-id="${ev.id}">Ver mais dados</button><button class="btn sm" data-act="refsForm">Faixas de referência</button></div></section>
+   ${srcCls(ev)}<div class="rowf wrap mt16"><button class="btn sm pri" data-act="moreData" data-id="${ev.id}">Ver mais dados</button><button class="btn sm" data-act="refsForm">Faixas de referência</button></div></section>
   <section class="card s3"><div class="ch"><span class="ttl">IMC</span></div><div class="mt12"><span class="mid">${imc ? N(imc.v, 2) : '—'}</span></div><div class="lbl mt4">${imc ? (imc.calc ? 'calculado · ' : '') + fdate(ev.date) : ''}</div><div class="mt8">${clsPill(imc ? classify('imc', imc.v, d) : '')}</div><div class="grow"></div><div class="mt12"><button class="btn sm" data-act="metricModal" data-key="imc">Ver histórico</button></div></section>
   <section class="card s3"><div class="ch"><span class="ttl">Metabolismo basal</span></div><div class="mt12"><span class="mid">${bmr != null ? N(bmr, 2) : '—'}<span class="dec"> kcal</span></span></div><div class="lbl mt8">Estimativa de energia utilizada pelo organismo em repouso.</div><div class="grow"></div><div class="mt12"><button class="btn sm" data-act="metricModal" data-key="bmr">Ver histórico</button></div></section>
   <section class="card s4"><div class="ch"><span class="ttl">Gordura visceral</span></div><div class="mt12"><span class="mid">${visc != null ? N(visc, 0) : '—'}</span></div><div class="mt8">${clsPill(visc != null ? classify('visc', visc, d) : '')}</div>${viscS.length > 1 ? `<div class="mt8">${lineChart(viscS.map(x => ({ l: fdate(x.date).slice(0, 5), v: x.v })), { h: 110, color: 'var(--am)', fmt: v => N(v, 0) })}</div>` : ''}<div class="mt8"><button class="btn sm" data-act="metricModal" data-key="visc">Ver histórico</button></div></section>
@@ -2782,6 +2783,7 @@ function moreDataModal(id) {
   ${bv(b, 'pesoIdeal') ? `<div class="kpis"><div class="kpi"><div class="l">Peso ideal</div><div class="n">${N(bv(b, 'pesoIdeal'), 1)}<small> kg</small></div></div></div>` : ''}
   <div class="mk">Comparativo corporal</div><div class="tbl-w mt8"><table class="tbl"><thead><tr><th></th><th class="r">Esta data</th><th class="r">Registro anterior</th></tr></thead><tbody>${METRICS.map(mrow).join('')}</tbody></table></div>
   ${pr ? `<div class="mk">Perimetria</div><div class="tbl-w mt8"><table class="tbl"><thead><tr><th></th><th class="r">Esta data</th><th class="r">Anterior</th></tr></thead><tbody>${pr}</tbody></table></div>` : ''}
+  ${b.magraPct != null || b.muscPct != null || b.agua != null || b.pesoIdealMin != null || b.revisar ? `<div class="mk">Dados da fonte</div><div class="tbl-w mt8"><table class="tbl"><tbody>${b.magraPct != null ? `<tr><td>Percentual magro</td><td class="r tnum fw6">${N(b.magraPct, 2)}%</td></tr>` : ''}${b.muscPct != null ? `<tr><td>Músculos</td><td class="r tnum fw6">${N(b.muscPct, 2)}%</td></tr>` : ''}${b.agua != null ? `<tr><td>Água</td><td class="r tnum fw6">${N(b.agua, 1)}</td></tr>` : ''}${b.pesoIdealMin != null ? `<tr><td>Faixa de peso</td><td class="r tnum fw6">${N(b.pesoIdealMin, 0)}–${N(b.pesoIdealMax, 0)} kg</td></tr>` : ''}${(b.revisar || []).map(k => `<tr><td>${k === 'ossea' ? 'Massa óssea' : 'Idade corporal'}</td><td class="r"><span class="pill am">Valor da fonte — revisar</span></td></tr>`).join('')}</tbody></table></div>` : ''}
   ${b.obs ? `<div class="lbl mt12">${esc(b.obs)}</div>` : ''}</div><div class="df">${b.locked ? '' : `<button class="btn" data-act="editBody" data-id="${b.id}">${ic('pencil', 's')} Editar</button>`}<button class="btn pri" data-close>Fechar</button></div>`, true);
 }
 
@@ -3305,47 +3307,177 @@ const byDate = (a, b) => (a.date || '').localeCompare(b.date || '');
 function aptFin(d = D()) {
   const a = d.apt, info = a.info || {}, cx = a.caixa || {}, T = todayISO(), value = +info.value || 0;
   const caixaS = (a.caixaHist || []).slice().sort(byDate), lastC = caixaS[caixaS.length - 1] || null, curyS = (a.curyHist || []).slice().sort(byDate), lastY = curyS[curyS.length - 1] || null;
-  const fontes = a.fontes || [], entrada = +info.entrada || 0, fgts = r2(sum(fontes.filter(f => f.type === 'fgts').map(f => f.value))), outros = r2(sum(fontes.filter(f => f.type === 'outros').map(f => f.value)));
-  const caixaC = +cx.contracted || 0, own = r2(entrada + fgts + outros), covered = r2(own + caixaC), diff = r2(value - covered);
-  const curyParc = a.parc.filter(p => p.payer !== 'caixa'), caixaParc = a.parc.filter(p => p.payer === 'caixa');
-  const curyPaid = r2(entrada + sum(curyParc.filter(p => p.paid).map(p => p.val))), curyLate = curyParc.filter(p => !p.paid && p.due < T);
-  const principal = +cx.originalFinanced || caixaC || 0, balance = lastC && lastC.balance != null ? +lastC.balance : null;
-  const amort = lastC && lastC.principalAmortized != null ? +lastC.principalAmortized : (principal && balance != null ? r2(principal - balance) : null);
-  const paidCx = caixaParc.filter(p => p.paid), part = k => r2(sum(paidCx.map(p => (p.parts && +p.parts[k]) || 0)));
-  const cost = lastC && (lastC.interest != null || lastC.insurance != null || lastC.fees != null || lastC.charges != null)
-    ? { juros: +lastC.interest || 0, seguros: +lastC.insurance || 0, taxas: +lastC.fees || 0, encargos: +lastC.charges || 0, from: 'extrato CAIXA de ' + fdate(lastC.date) }
-    : { juros: part('juros'), seguros: part('seguro'), taxas: part('taxa'), encargos: 0, from: 'parcelas CAIXA pagas' };
-  // custo desembolsado: cada pagamento é contado uma única vez; repasses/liberações da CAIXA e FGTS ficam de fora
-  const ownParcels = r2(sum(curyParc.filter(p => p.paid && p.paidBy !== 'caixa').map(p => p.val)));
-  const cxPayments = paidCx.length ? r2(sum(paidCx.map(p => p.val))) : r2((amort || 0) + cost.juros + cost.seguros + cost.taxas + cost.encargos);
-  const disbursed = r2(entrada + ownParcels + cxPayments);
-  return { info, cx, value, lastC, lastY, caixaS, curyS, fontes, entrada, fgts, outros, caixaC, own, covered, diff, caixaPct: value ? caixaC / value * 100 : 0, ownPct: value ? own / value * 100 : 0,
-    curyPaid, curyToPay: Math.max(0, r2(value - curyPaid)), curyLate, principal, balance, amort, paidCx, nCx: caixaParc.length, cost, ownParcels, cxPayments, disbursed };
+  const financed = +(cx.originalFinanced ?? cx.contracted) || 0;
+  const curyParc = a.parc.filter(p => p.payer !== 'caixa'), cxParc = a.parc.filter(p => p.payer === 'caixa').sort((x, y) => x.due.localeCompare(y.due));
+  const cxPaid = cxParc.filter(p => p.paid), cxOver = cxParc.filter(p => !p.paid && p.due < T), cxOpen = cxParc.filter(p => !p.paid && p.due >= T);
+  const cxPaidSum = r2(sum(cxPaid.map(p => p.val))), cxOverSum = r2(sum(cxOver.map(p => p.val))), cxOpenSum = r2(sum(cxOpen.map(p => p.val)));
+  const st = lastY || {}, curyPaid = st.paid != null ? +st.paid : (curyParc.some(p => p.paid) ? r2(sum(curyParc.filter(p => p.paid).map(p => p.val))) : null);
+  const curyToPay = st.toPay != null ? +st.toPay : null, curyOver = st.overdue != null ? +st.overdue : null;
+  const curyPending = curyToPay != null || curyOver != null ? r2((curyToPay || 0) + (curyOver || 0)) : null;
+  const entrada = info.entrada != null && info.entrada !== '' ? +info.entrada : null, inc = info.entradaIncluida || 'unknown';
+  const entradaExtra = inc === 'nao' && entrada ? entrada : 0; // só soma se ficou claro que NÃO está nos valores pagos à Cury
+  const totalPaid = curyPaid != null || cxPaid.length ? r2((curyPaid || 0) + cxPaidSum + entradaExtra) : null;
+  return { info, cx, value, financed, caixaPct: value && financed ? financed / value * 100 : null, unfin: value && financed ? r2(value - financed) : null, unfinPct: value && financed ? (value - financed) / value * 100 : null,
+    lastC, lastY, caixaS, curyS, balance: lastC && lastC.balance != null ? +lastC.balance : null, balanceDate: lastC && lastC.date,
+    curyPaid, curyToPay, curyOver, curyPending, entrada, inc, entradaExtra, cxParc, cxPaid, cxOver, cxOpen, cxPaidSum, cxOverSum, cxOpenSum, cxNow: r2(cxOverSum + cxOpenSum), cxNext: cxOpen[0] || null, totalPaid };
 }
 const valSrc = info => info && info.value ? `Fonte: ${info.valueSource === 'cury' ? 'Cury' : 'Manual'}${info.valueDate ? ' · ' + fdate(info.valueDate) : ''}` : '';
 const kvRow = (l, v, cls = '') => `<div class="cat-row ${cls}"><span>${l}</span><span class="v">${v}</span></div>`;
+const NI = '<span class="mu">Não informado</span>';
+const Rn = v => v == null ? NI : R(v);
+const pctN = v => v == null ? NI : N(v, 1) + '%';
+const pctS = v => v == null ? NI : N(v, 2) + '%';
 
-function secCuryCaixa() {
-  const d = D(), a = aptFin(d), cx = a.cx, hasCx = !!(d.apt.caixa || a.caixaS.length || a.fontes.length);
-  const composition = `<section class="card s6">${illus('shield', 'v')}<div class="ch"><span class="ttl">Como meu imóvel está sendo pago</span></div>
-   <div class="lbl mt12">Valor do imóvel</div><div class="mt4">${bigMoney(a.value, 'mid tnum')}</div><div class="lbl mt4">${esc(valSrc(a.info) || 'Informe o valor contratual em "Editar dados"')}</div>
-   <div class="mk">Fontes de pagamento</div><div class="mt8">${kvRow('Entrada / recursos próprios', R(a.entrada))}${kvRow('FGTS', R(a.fgts))}${kvRow('Financiamento CAIXA (contratado)', R(a.caixaC))}${kvRow('Outros', R(a.outros))}${kvRow('<b>Total coberto</b>', '<b>' + R(a.covered) + '</b>')}${kvRow('Diferença', `<span class="${a.diff === 0 ? 'pos' : 'warn'}">${R(a.diff)}</span>`)}</div>
-   ${a.value && a.diff !== 0 ? `<div class="rowf sm mt12" style="background:var(--amS);padding:10px 14px;border-radius:12px;align-items:flex-start"><span class="warn">${ic('alert', 's')}</span><span>Há diferença entre a composição cadastrada e o valor contratual. Verifique se existem entradas, subsídios, FGTS, descontos ou outras fontes ainda não cadastradas.</span></div>` : ''}
-   ${a.value && a.caixaC ? `<div class="mk">Participação no valor do imóvel</div><div class="seg mt8" role="img" aria-label="CAIXA ${Math.round(a.caixaPct)}%"><i style="flex:${a.caixaPct} 1 0;background:var(--g-cartao)"></i><i style="flex:${Math.max(a.ownPct, 0.001)} 1 0;background:var(--g-sobra)"></i></div><div class="rowf between sm mt8"><span class="rowf" style="gap:6px"><span class="sq" style="background:var(--g-cartao)"></span>Financiado pela CAIXA <b>${N(a.caixaPct, 1)}%</b></span><span class="rowf" style="gap:6px"><span class="sq" style="background:var(--g-sobra)"></span>Recursos próprios/outros <b>${N(a.ownPct, 1)}%</b></span></div>` : ''}
-   <div class="rowf wrap mt16"><button class="btn sm" data-act="aptInfo">${ic('pencil', 's')} Editar dados e entrada</button><button class="btn sm" data-act="fonteForm">${ic('plus', 's')} FGTS / outras fontes</button></div></section>`;
-  const sideBySide = `<section class="card s6"><div class="ch"><span class="ttl">Cury × CAIXA</span></div><div class="lbl">Saldo a pagar à construtora e saldo devedor do financiamento são coisas diferentes — nunca são somados.</div>
-   <div class="grid mt12" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:16px"><div><div class="rowf" style="gap:8px"><span class="pill bl">CURY</span><span class="lbl">construtora</span></div>${kvRow('Pago à construtora', R(a.curyPaid))}${kvRow('A pagar à construtora', R(a.curyToPay))}${kvRow('Vencido', `<span class="${a.curyLate.length ? 'neg' : ''}">${R(sum(a.curyLate.map(p => p.val)))}</span>`)}${a.lastY ? `<div class="xs mu mt8">Extrato Cury de ${fdate(a.lastY.date)}: pago ${R(a.lastY.paid || 0)} · a pagar ${R(a.lastY.toPay || 0)}${a.lastY.overdue ? ' · vencido ' + R(a.lastY.overdue) : ''}</div>` : ''}</div>
-   <div><div class="rowf" style="gap:8px"><span class="pill">CAIXA</span><span class="lbl">financiamento</span></div>${kvRow('Principal financiado', R(a.principal))}${kvRow('Saldo devedor', a.balance != null ? R(a.balance) : '—')}${kvRow('Principal amortizado', a.amort != null ? R(a.amort) : '—')}${kvRow('Prestações', a.nCx ? a.paidCx.length + ' de ' + a.nCx + ' pagas' : '—')}${kvRow('Juros/encargos', R(a.cost.juros + a.cost.encargos))}</div></div></section>`;
-  const custo = `<section class="card s4"><div class="ch"><span class="ttl">Custo desembolsado até agora</span></div><div class="mt12">${bigMoney(a.disbursed, 'mid tnum')}</div><div class="lbl mt8">Somente valores efetivamente pagos por você, sem dupla contagem.</div>
-   <div class="mt12">${kvRow('Entrada', R(a.entrada))}${kvRow('Parcelas Cury pagas por você', R(a.ownParcels))}${kvRow(a.paidCx.length ? 'Prestações CAIXA pagas' : 'Pagamentos CAIXA (conforme extrato)', R(a.cxPayments))}${kvRow('Seguros e taxas (dentro do total)', R(a.cost.seguros + a.cost.taxas))}</div>
-   <div class="xs mu mt8">Não entram: valores liberados/repassados pela CAIXA à construtora, parcelas marcadas como pagas pela CAIXA${a.fgts ? ' e o FGTS (' + R(a.fgts) + ')' : ''}. Juros, seguros e taxas já estão nas prestações — não são somados de novo.</div></section>`;
-  const caixaCard = `<section class="card s8"><div class="rowf wrap between mb8"><span class="ttl">Financiamento CAIXA</span><div class="rowf wrap"><button class="btn sm" data-act="caixaForm">${ic('pencil', 's')} Dados do contrato</button><button class="btn sm" data-act="caixaPaste">${ic('clipboard', 's')} Colar extrato</button><button class="btn sm pri" data-act="caixaHistForm">${ic('plus', 's')} Novo saldo</button></div></div>
-   ${d.apt.caixa ? `<div class="kpis"><div class="kpi"><div class="l">Aprovado</div><div class="n" style="font-size:16px">${R(cx.approved || 0)}</div></div><div class="kpi"><div class="l">Contratado</div><div class="n" style="font-size:16px">${R(cx.contracted || 0)}</div></div><div class="kpi"><div class="l">Liberado</div><div class="n" style="font-size:16px">${R(cx.released || 0)}</div></div><div class="kpi"><div class="l">Repassado à construtora</div><div class="n" style="font-size:16px">${R(cx.repassed || 0)}</div><div class="s">${cx.lastRepasse ? 'último em ' + fdate(cx.lastRepasse) : ''}</div></div><div class="kpi"><div class="l">Ainda a liberar</div><div class="n" style="font-size:16px">${R(Math.max(0, (+cx.contracted || 0) - (+cx.released || 0)))}</div></div></div>` : `<div class="lbl">Cadastre valores aprovado, contratado, liberado e repassado.</div>`}
-   ${a.caixaS.length ? `<div class="tbl-w mt12"><table class="tbl"><thead><tr><th>Data</th><th class="r">Saldo devedor</th><th class="r">Principal amortizado</th><th class="r">Juros</th><th class="r">Seguros</th><th class="r">Taxas</th><th></th></tr></thead><tbody>${a.caixaS.slice().reverse().map(h => `<tr><td>${fdate(h.date)}</td><td class="r tnum fw6">${h.balance != null ? R(h.balance) : '—'}</td><td class="r tnum">${h.principalAmortized != null ? R(h.principalAmortized) : '—'}</td><td class="r tnum">${h.interest != null ? R(h.interest) : '—'}</td><td class="r tnum">${h.insurance != null ? R(h.insurance) : '—'}</td><td class="r tnum">${h.fees != null ? R(h.fees) : '—'}</td><td class="r"><div class="actions">${editBtn('caixaHistEdit', h.id)}${delBtn('caixah', h.id)}</div></td></tr>`).join('')}</tbody></table></div><div class="xs mu mt8">Cada extrato é um registro novo com data — o saldo anterior nunca é substituído.</div>` : emptyBox('receipt', 'Nenhum extrato do financiamento', 'Registre o saldo devedor e o que já foi amortizado, pago em juros, seguros e taxas.', 'Novo saldo', 'caixaHistForm')}</section>`;
-  const fontesCard = `<section class="card s6"><div class="rowf between mb8"><span class="ttl">Outras fontes de pagamento</span><button class="btn sm" data-act="fonteForm">${ic('plus', 's')} Adicionar</button></div>${a.fontes.length ? `<div class="list">${a.fontes.map(f => `<div class="li"><div class="ico ${f.type === 'fgts' ? 'gr' : 'gy'}">${ic('wallet', 's')}</div><div class="n">${esc(f.label || (f.type === 'fgts' ? 'FGTS' : 'Outros'))}<small>${f.type === 'fgts' ? 'FGTS' : 'Outros'}${f.date ? ' · ' + fdate(f.date) : ''}</small></div><div class="v">${R(f.value)}</div>${editBtn('fonteEdit', f.id)}${delBtn('fonte', f.id)}</div>`).join('')}</div>` : '<div class="lbl">A entrada fica em "Editar dados". Adicione FGTS, subsídios ou descontos para fechar a composição.</div>'}</section>`;
-  const curyCard = `<section class="card s6"><div class="rowf wrap between mb8"><span class="ttl">Extratos da construtora (Cury)</span><div class="rowf wrap"><button class="btn sm" data-act="curyPaste">${ic('clipboard', 's')} Colar extrato</button><button class="btn sm pri" data-act="curyHistForm">${ic('plus', 's')} Novo extrato</button></div></div>${a.curyS.length ? `<div class="tbl-w"><table class="tbl"><thead><tr><th>Data</th><th class="r">Valor</th><th class="r">Pago</th><th class="r">A pagar</th><th class="r">Vencido</th><th></th></tr></thead><tbody>${a.curyS.slice().reverse().map(h => `<tr><td>${fdate(h.date)}</td><td class="r tnum">${h.valor != null ? R(h.valor) : '—'}</td><td class="r tnum">${h.paid != null ? R(h.paid) : '—'}</td><td class="r tnum">${h.toPay != null ? R(h.toPay) : '—'}</td><td class="r tnum">${h.overdue ? R(h.overdue) : '—'}</td><td class="r"><div class="actions">${editBtn('curyHistEdit', h.id)}${delBtn('curyh', h.id)}</div></td></tr>`).join('')}</tbody></table></div>` : '<div class="lbl">Guarde aqui o que o extrato da Cury informa (valor do imóvel, pago, a pagar, vencido) para acompanhar a evolução.</div>'}</section>`;
-  return `<div class="s12"><div class="md2" style="margin:8px 2px 0">Cury × CAIXA</div><div class="lbl" style="margin:0 2px">Valor do bem, fontes de pagamento e custos financeiros — sem contar o mesmo dinheiro duas vezes.</div></div>${composition}${sideBySide}${custo}${caixaCard}${fontesCard}${curyCard}`;
+/* ---------- parsers de texto copiado dos portais (Cury / CAIXA): aceitam Markdown e links ---------- */
+const stripMd = t => String(t || '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/https?:\/\/\S+/g, '').replace(/[*_`]{1,3}/g, '').replace(/ /g, ' ');
+const moneyIn = s => [...String(s).matchAll(/(?:R\$\s*)?(-?\d{1,3}(?:\.\d{3})*,\d{2}|-?\d+,\d{2})/g)].map(m => numFrom(m[1], true));
+const stNorm = s => { const L = norm(s); return /pag|quit|baix|liquid/.test(L) && !/a pagar/.test(L) ? 'Paga' : /vencid|atras/.test(L) ? 'Vencida' : /a vencer|abert|a pagar|pendent|prevista/.test(L) ? 'A pagar' : ''; };
+function parseCuryParcelas(raw) {
+  const lines = stripMd(raw).split(/\r?\n/).map(l => l.trim()).filter(l => l && !/^[-—|:\s]+$/.test(l)), DT = /\d{2}\/\d{2}\/\d{4}/;
+  let rows = [];
+  if (lines.some(l => l.includes('\t') || l.includes('|'))) rows = lines.filter(l => DT.test(l)).map(l => l.replace(/^\|/, '').replace(/\|/g, '\t'));
+  else { let cur = ''; for (const l of lines) { if (/^\d{1,3}$/.test(l) && DT.test(cur)) { rows.push(cur); cur = l; } else cur += (cur ? '\t' : '') + l; } if (DT.test(cur)) rows.push(cur); }
+  const out = [], bad = [];
+  rows.forEach(row => {
+    const cells = row.split('\t').map(c => c.trim()).filter(Boolean), j = cells.join(' '), ds = findDates(j).map(x => x.iso), m = moneyIn(j);
+    const nCell = cells.find(c => /^\d{1,3}$/.test(c)), n = nCell ? +nCell : +((/^(\d{1,3})\b/.exec(j) || [])[1] || 0);
+    if (!n || !ds.length || !m.length) { bad.push(j.slice(0, 120)); return; }
+    const status = stNorm(cells.slice(-2).join(' ')) || stNorm(j);
+    const txt = cells.filter(c => !DT.test(c) && !/R\$|^-?[\d.]+,\d{2}$|^\d{1,3}$|^[\d,.]+%?$/.test(c) && !stNorm(c));
+    let original, corr, fines, upd, toPay, paid;
+    if (m.length >= 6) [original, corr, fines, upd, toPay, paid] = m; else if (m.length === 5) { [original, corr, fines, upd] = m; const last = m[4]; if (status === 'Paga') paid = last; else toPay = last; } else if (m.length === 4) [original, corr, fines, upd] = m; else { original = m[0]; upd = m[m.length - 1]; }
+    out.push({ n, title: txt[0] || '', contract: txt[1] || '', cond: txt[2] || '', due: ds[0], paidDate: ds[1] || '', original, corr: corr ?? null, fines: fines ?? null, updated: upd ?? original, toPay: toPay ?? null, paid: paid ?? null, status: status || (ds[1] ? 'Paga' : 'A pagar') });
+  });
+  return { rows: out, bad };
 }
+function parseCaixaPrest(raw) {
+  const lines = stripMd(raw).split(/\r?\n/).map(l => l.trim()).filter(Boolean), out = [], bad = []; let sect = '';
+  for (const l of lines) {
+    const L = norm(l), ds = findDates(l);
+    if (!ds.length) { if (/quitad/.test(L)) sect = 'paid'; else if (/em aberto|abertas?\b/.test(L)) sect = 'open'; continue; }
+    const m = moneyIn(stripDates(l)); if (!m.length) { bad.push(l.slice(0, 100)); continue; }
+    let st = /quitad|\bpag/.test(L) ? 'Paga' : /vencid|atras/.test(L) ? 'Vencida' : /abert|a vencer/.test(L) ? 'A pagar' : sect === 'paid' ? 'Paga' : sect === 'open' ? 'A pagar' : '';
+    if (!st) st = 'A pagar';
+    out.push({ due: ds[0].iso, status: st, value: m[0], extra: m.slice(1) });
+  }
+  const seen = new Set(); return { rows: out.filter(r => { const k = r.due; if (seen.has(k)) return false; seen.add(k); return true; }), bad };
+}
+function curyDiff(r, d = D()) {
+  const hist = d.apt.curyParcHist.filter(x => x.n === r.n).sort((a, b) => b.date.localeCompare(a.date) || (b.recordedAt || 0) - (a.recordedAt || 0)), last = hist[0];
+  if (!last) return d.apt.parc.some(p => p.payer !== 'caixa' && (p.n === r.n || p.due === r.due)) ? 'novo-hist' : 'novo';
+  return last.updated === r.updated && last.status === r.status && last.toPay === r.toPay && last.paid === r.paid ? 'igual' : 'alterado';
+}
+const IMPF = { kind: '', rows: [], date: '' };
+function finTextPaste(kind) {
+  openForm({ title: kind === 'caixa' ? 'Colar prestações da CAIXA' : 'Colar parcelas da Cury', sub: 'Cole o texto direto do portal — links e Markdown são removidos. Você vê uma prévia antes de salvar.', wide: true, submit: 'Analisar',
+    fields: [{ k: 'text', label: 'Texto copiado', type: 'textarea', req: true }, { k: 'date', label: 'Data do extrato', type: 'date', req: true }], values: { date: todayISO() },
+    onSubmit(v) { const r = kind === 'caixa' ? parseCaixaPrest(v.text) : parseCuryParcelas(v.text); if (!r.rows.length) { toast('Não reconheci nenhuma linha. Cole a tabela completa do portal.', 'err'); return false; } IMPF.kind = kind; IMPF.rows = r.rows; IMPF.bad = r.bad; IMPF.date = v.date; setTimeout(finTextPreview, 80); } });
+}
+function finTextPreview() {
+  const d = D(), kind = IMPF.kind, rows = IMPF.rows;
+  const diffOf = r => kind === 'caixa' ? (() => { const p = d.apt.parc.find(x => x.payer === 'caixa' && x.due === r.due); return !p ? 'novo' : (p.val === r.value && !!p.paid === (r.status === 'Paga') ? 'igual' : 'alterado'); })() : curyDiff(r, d);
+  rows.forEach(r => { r.diff = diffOf(r); if (r.on === undefined) r.on = r.diff !== 'igual'; });
+  const pill = x => x === 'igual' ? '<span class="pill">Já existe (igual)</span>' : x === 'alterado' ? '<span class="pill am">Alterado — guarda histórico</span>' : '<span class="pill gr">Novo</span>';
+  const n = rows.filter(r => r.on).length;
+  openHTML(`<div class="dh"><div><h3>Prévia — ${kind === 'caixa' ? 'prestações CAIXA' : 'parcelas Cury'}</h3><p>${rows.length} linha(s) · extrato de ${fdate(IMPF.date)} · nada foi salvo ainda</p></div><button class="ib" data-close aria-label="Fechar">${ic('x')}</button></div><div class="db"><div class="tbl-w"><table class="tbl"><thead><tr><th></th><th>${kind === 'caixa' ? 'Vencimento' : 'Parcela'}</th>${kind === 'caixa' ? '' : '<th>Vencimento</th>'}<th class="r">${kind === 'caixa' ? 'Valor' : 'Atualizado'}</th>${kind === 'caixa' ? '' : '<th class="r">Correção</th><th class="r">Multa+juros</th>'}<th>Status</th><th>Situação</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td><button class="chk ${r.on ? 'on' : ''}" data-act="finRowTog" data-i="${i}" aria-label="Incluir">${ic('check')}</button></td>${kind === 'caixa' ? `<td>${fdate(r.due)}</td><td class="r tnum">${R(r.value)}</td>` : `<td class="fw6">${r.n}</td><td>${fdate(r.due)}</td><td class="r tnum">${R(r.updated)}</td><td class="r tnum">${r.corr != null ? R(r.corr) : '—'}</td><td class="r tnum">${r.fines != null ? R(r.fines) : '—'}</td>`}<td>${r.status}</td><td>${pill(r.diff)}</td></tr>`).join('')}</tbody></table></div>${IMPF.bad && IMPF.bad.length ? `<details class="mt12"><summary class="sm fw6" style="cursor:pointer">Linhas não reconhecidas (${IMPF.bad.length})</summary><div class="xs mu mt8">${IMPF.bad.slice(0, 20).map(esc).join('<br>')}</div></details>` : ''}</div><div class="df"><button class="btn" data-close>Cancelar</button><button class="btn pri" data-act="finRowsSave" ${n ? '' : 'disabled'}>${ic('check', 's')} Salvar ${n} linha(s)</button></div>`, true);
+}
+function finRowsSave() {
+  const d = D(), a = d.apt, now = Date.now(); let n = 0;
+  IMPF.rows.filter(r => r.on).forEach(r => {
+    if (IMPF.kind === 'caixa') {
+      const p = a.parc.find(x => x.payer === 'caixa' && x.due === r.due), paid = r.status === 'Paga';
+      if (p) { p.hist = [...(p.hist || []), { at: now, date: IMPF.date, val: p.val, paid: !!p.paid }]; p.val = r.value; p.paid = paid; p.paidDate = paid ? (p.paidDate || r.due) : ''; if (r.extra.length) p.extra = r.extra; }
+      else a.parc.push({ id: uid(), desc: 'Prestação CAIXA', type: 'Financiamento', payer: 'caixa', val: r.value, due: r.due, paid, paidDate: paid ? r.due : '', extra: r.extra, source: 'Texto colado' });
+    } else {
+      a.curyParcHist.push({ id: uid(), n: r.n, date: IMPF.date, recordedAt: now, due: r.due, original: r.original, corr: r.corr, fines: r.fines, updated: r.updated, toPay: r.toPay, paid: r.paid, status: r.status, title: r.title, contract: r.contract, cond: r.cond });
+      const p = a.parc.find(x => x.payer !== 'caixa' && (x.n === r.n || (!x.n && x.due === r.due))), paid = r.status === 'Paga', val = r.status === 'Paga' ? (r.paid ?? r.updated) : r.updated;
+      if (p) { p.n = r.n; p.val = val; p.paid = paid; p.due = r.due; p.paidDate = paid ? (r.paidDate || p.paidDate || '') : ''; } else a.parc.push({ id: uid(), n: r.n, desc: 'Parcela ' + r.n + ' (Cury)', type: 'Mensal', payer: 'cury', val, due: r.due, paid, paidDate: paid ? r.paidDate : '', source: 'Texto colado' });
+    }
+    n++;
+  });
+  const dl = $('#dlg'); dl.open && dl.close(); commit(n + ' linha(s) salva(s)');
+}
+function parcEvolModal(n) {
+  const h = D().apt.curyParcHist.filter(x => x.n === n).sort((a, b) => a.date.localeCompare(b.date) || (a.recordedAt || 0) - (b.recordedAt || 0));
+  openHTML(`<div class="dh"><div><h3>Evolução da parcela ${n}</h3><p>Cada extrato fica registrado — nenhum é substituído</p></div><button class="ib" data-close aria-label="Fechar">${ic('x')}</button></div><div class="db"><div class="tbl-w"><table class="tbl"><thead><tr><th>Extrato</th><th>Vencimento</th><th class="r">Original</th><th class="r">Correção</th><th class="r">Multa+juros</th><th class="r">Atualizado</th><th>Status</th></tr></thead><tbody>${h.map(x => `<tr><td>${fdate(x.date)}</td><td>${fdate(x.due)}</td><td class="r tnum">${x.original != null ? R(x.original) : '—'}</td><td class="r tnum">${x.corr != null ? R(x.corr) : '—'}</td><td class="r tnum">${x.fines != null ? R(x.fines) : '—'}</td><td class="r tnum fw6">${R(x.updated)}</td><td>${x.status}</td></tr>`).join('')}</tbody></table></div></div><div class="df"><button class="btn pri" data-close>Fechar</button></div>`, true);
+}
+
+/* ---------- amortização (simulação estimada, nunca inventa dados) ---------- */
+function amortSim(x, mode) {
+  const a = aptFin(), cx = a.cx, S0 = a.balance, rate = cx.rate != null ? +cx.rate / 100 / 12 : null, n = cx.remaining != null ? +cx.remaining : null, sys = cx.system;
+  if (!(S0 > 0) || rate == null || !n || !(sys === 'price' || sys === 'sac') || !(x > 0) || x >= S0) return null;
+  const S1 = S0 - x;
+  if (sys === 'price') { const pmt = S0 * rate / (1 - Math.pow(1 + rate, -n)); if (mode === 'prazo') { const k = pmt - S1 * rate; if (k <= 0) return null; const n1 = -Math.log(1 - S1 * rate / pmt) / Math.log(1 + rate); return { before: { pmt, n }, after: { pmt, n: Math.ceil(n1) } }; } return { before: { pmt, n }, after: { pmt: S1 * rate / (1 - Math.pow(1 + rate, -n)), n } }; }
+  const A = S0 / n; if (mode === 'prazo') return { before: { pmt: A + S0 * rate, n }, after: { pmt: A + S1 * rate, n: Math.ceil(S1 / A) } }; return { before: { pmt: A + S0 * rate, n }, after: { pmt: S1 / n + S1 * rate, n } };
+}
+function amortForm() {
+  const a = aptFin(); openForm({ title: 'Quero amortizar', sub: 'Estimativa simples — não oficial.', submit: 'Simular',
+    fields: [{ k: 'x', label: 'Quanto quero amortizar? (R$)', type: 'money', pos: true }, { k: 'mode', label: 'O que quero', type: 'select', opts: [['prazo', 'Reduzir prazo (mantém a prestação)'], ['prestacao', 'Reduzir prestação (mantém o prazo)']] }], values: { mode: 'prazo' },
+    onSubmit(v) { const r = amortSim(v.x, v.mode); setTimeout(() => openHTML(`<div class="dh"><div><h3>Simulação de amortização</h3><p>ESTIMATIVA — NÃO OFICIAL</p></div><button class="ib" data-close aria-label="Fechar">${ic('x')}</button></div><div class="db">${r ? `<div class="kpis"><div class="kpi"><div class="l">Antes</div><div class="n" style="font-size:16px">${R(r.before.pmt)}</div><div class="s">${r.before.n} meses</div></div><div class="kpi"><div class="l">Depois</div><div class="n" style="font-size:16px">${R(r.after.pmt)}</div><div class="s">${r.after.n} meses</div></div><div class="kpi"><div class="l">Diferença</div><div class="n" style="font-size:16px">${v.mode === 'prazo' ? (r.before.n - r.after.n) + ' meses a menos' : R(r.before.pmt - r.after.pmt) + ' a menos'}</div></div></div><div class="lbl mt12">Considera só saldo devedor, taxa, prazo e sistema informados. A prestação real pode variar por juros, seguros, taxas e correções.</div>` : `<div class="lbl">Faltam informações do contrato para calcular com precisão.</div><div class="xs mu mt8">Preciso de saldo devedor, taxa, meses restantes e sistema de amortização (SAC ou Price) nos dados do contrato.</div>`}</div><div class="df"><button class="btn pri" data-close>Fechar</button></div>`), 80); } });
+}
+function amortGoalForm() {
+  const d = D(), g = d.apt.amortGoal || {};
+  openForm({ title: 'Meta de amortização', submit: 'Salvar', fields: [{ k: 'target', label: 'Valor da meta (R$)', type: 'money', pos: true, half: true }, { k: 'date', label: 'Data alvo', type: 'date', req: true, half: true }, { k: 'saved', label: 'Já reservado (R$)', type: 'money', half: true }], values: g,
+    onSubmit(v) { d.apt.amortGoal = { target: v.target, date: v.date, saved: v.saved || 0 }; commit('Meta salva'); } });
+}
+function caixaContratoForm() {
+  const d = D(); if (needApt()) return; const c = d.apt.caixa || {}, num = (k, l, h) => ({ k, label: l, type: 'number', half: true, hint: h });
+  openForm({ title: 'Dados do contrato CAIXA', sub: 'Deixe em branco o que não souber — aparece como "Não informado".', wide: true, submit: 'Salvar',
+    fields: [{ k: 'contractNo', label: 'Contrato', half: true }, { k: 'signedDate', label: 'Assinatura', type: 'date', half: true }, { k: 'contracted', label: 'Valor contratado (R$)', type: 'money', half: true }, { k: 'originalFinanced', label: 'Valor originalmente financiado (R$)', type: 'money', half: true }, num('term', 'Prazo contratado (meses)'), num('remaining', 'Meses restantes'), num('rate', 'Taxa nominal (% ao ano)'), num('relRate', 'Juros com relacionamento (%)'), num('reducer', 'Redutor (%)'), { k: 'appraisal', label: 'Avaliação do imóvel (R$)', type: 'money', half: true }, { k: 'fgts', label: 'FGTS utilizado (R$)', type: 'money', half: true },
+      { k: 'system', label: 'Sistema de amortização', type: 'select', opts: [['', 'Não informado'], ['price', 'Price (parcela fixa)'], ['sac', 'SAC (amortização fixa)']], half: true }, { k: 'approved', label: 'Valor aprovado (R$)', type: 'money', half: true }, { k: 'released', label: 'Valor liberado (R$)', type: 'money', half: true }, { k: 'repassed', label: 'Valor repassado à construtora (R$)', type: 'money', half: true }],
+    values: c,
+    onSubmit(v) { if (d.apt.caixa) { d.apt.caixaLog = d.apt.caixaLog || []; d.apt.caixaLog.push({ id: uid(), date: todayISO(), at: Date.now(), prev: { ...d.apt.caixa } }); } const o = { ...(d.apt.caixa || {}) }; ['contractNo', 'signedDate', 'system'].forEach(k => o[k] = v[k] || null); ['contracted', 'originalFinanced', 'term', 'remaining', 'rate', 'relRate', 'reducer', 'appraisal', 'fgts', 'approved', 'released', 'repassed'].forEach(k => o[k] = v[k] == null ? null : v[k]); d.apt.caixa = o; commit('Contrato salvo'); } });
+}
+function curyObraForm() {
+  const d = D(); if (needApt()) return; const l = d.apt.curyObra.slice().sort(byDate).pop() || {}; const ph = l.phases || {};
+  const f = (k, lab) => ({ k: 'p_' + k, label: lab + ' (%)', type: 'number', half: true });
+  const keys = [['fund', 'Fundação'], ['estr', 'Estrutura'], ['alv', 'Alvenaria'], ['ele', 'Instalações elétricas'], ['hid', 'Instalações hidráulicas'], ['ai', 'Acabamento interno'], ['ae', 'Acabamento externo'], ['serv', 'Serviços complementares'], ['pint', 'Pintura']];
+  openForm({ title: 'Andamento da obra — Cury', sub: 'Percentual geral só é mostrado se você informar (o app não calcula média).', wide: true, submit: 'Salvar', fields: [{ k: 'date', label: 'Data', type: 'date', req: true, half: true }, { k: 'status', label: 'Status', half: true }, { k: 'delivery', label: 'Entrega contratual', half: true }, { k: 'overall', label: 'Percentual geral (%)', type: 'number', half: true }, ...keys.map(([k, lab]) => f(k, lab))], values: { date: todayISO(), status: l.status, delivery: l.delivery, overall: l.overall, ...Object.fromEntries(keys.map(([k]) => ['p_' + k, ph[k]])) },
+    onSubmit(v) { d.apt.curyObra.push({ id: uid(), recordedAt: Date.now(), date: v.date, status: v.status, delivery: v.delivery, overall: v.overall, phases: Object.fromEntries(keys.map(([k]) => [k, v['p_' + k]]).filter(([, x]) => x != null)) }); commit('Andamento salvo'); } });
+}
+function caixaObraForm() {
+  const d = D(); if (needApt()) return;
+  openForm({ title: 'Andamento da obra — CAIXA', sub: 'Medido e previsto são coisas diferentes.', wide: true, submit: 'Salvar', fields: [{ k: 'date', label: 'Data da última medição', type: 'date', req: true, half: true }, { k: 'measured', label: 'Andamento medido (%)', type: 'number', req: true, half: true }, { k: 'stage', label: 'Etapa', type: 'number', half: true }, { k: 'situation', label: 'Situação', half: true }, { k: 'nextStage', label: 'Próxima etapa', type: 'number', half: true }, { k: 'nextDate', label: 'Data prevista', type: 'date', half: true }, { k: 'nextCum', label: 'Acumulado previsto (%)', type: 'number', half: true }], values: { date: todayISO() },
+    onSubmit(v) { d.apt.caixaObra.push({ id: uid(), recordedAt: Date.now(), ...v }); commit('Andamento salvo'); } });
+}
+
+/* ---------- seção Apartamento: Cury × CAIXA (simples, sem misturar conceitos) ---------- */
+function secCuryCaixa() {
+  const d = D(), a = aptFin(d), cx = a.cx, ly = a.lastY, T = todayISO();
+  const cObra = d.apt.curyObra.slice().sort(byDate).pop(), kObra = d.apt.caixaObra.slice().sort(byDate).pop();
+  const PH = [['fund', 'Fundação'], ['estr', 'Estrutura'], ['alv', 'Alvenaria'], ['ele', 'Instalações elétricas'], ['hid', 'Instalações hidráulicas'], ['ai', 'Acabamento interno'], ['ae', 'Acabamento externo'], ['serv', 'Serviços complementares'], ['pint', 'Pintura']];
+  const sumRows = arr => arr.map(p => `<div class="cat-row"><span>${fdate(p.due)}${p.estimate ? ' <span class="pill am">estimativa</span>' : ''}</span><span class="v">${R(p.val)}</span></div>`).join('');
+  const y25 = a.cxPaid.filter(p => p.due.slice(0, 4) === '2025'), y26 = a.cxPaid.filter(p => p.due.slice(0, 4) === '2026');
+  const byYear = {}; a.cxPaid.forEach(p => (byYear[p.due.slice(0, 4)] = byYear[p.due.slice(0, 4)] || []).push(p));
+  const est = a.cxNext ? { due: addMonthsISO(a.cxNext.due, 1), val: a.cxNext.val, estimate: true } : null;
+  const g = d.apt.amortGoal, gm = g ? Math.max(0, Math.round(daysBetween(T, g.date) / 30.4)) : 0, gRest = g ? Math.max(0, r2(g.target - (g.saved || 0))) : 0;
+  const imovel = `<section class="card s6">${illus('home', 'k')}<div class="ch"><span class="ttl">Valor do imóvel e financiamento</span></div>
+   <div class="lbl mt12">Valor do imóvel</div><div class="mt4">${a.value ? bigMoney(a.value, 'mid tnum') : '<span class="mid">Não informado</span>'}</div><div class="lbl mt4">${esc(valSrc(a.info) || 'Informe o valor em "Editar dados"')}</div>
+   <div class="mk">Financiamento CAIXA</div><div class="mt8">${kvRow('Valor financiado', Rn(a.financed || null))}${kvRow('Percentual financiado', pctN(a.caixaPct))}${kvRow('Parte não financiada', Rn(a.unfin))}${kvRow('Percentual não financiado', pctN(a.unfinPct))}</div>
+   ${a.caixaPct != null ? `<div class="seg mt12" role="img" aria-label="Financiado ${N(a.caixaPct, 1)}%"><i style="flex:${a.caixaPct} 1 0;background:var(--g-cartao)"></i><i style="flex:${Math.max(a.unfinPct, 0.001)} 1 0;background:var(--g-sobra)"></i></div>` : ''}
+   <details class="mt16"><summary class="sm fw6" style="cursor:pointer">Dados do contrato CAIXA</summary><div class="mt8">${kvRow('Contrato', esc(cx.contractNo || '') || NI)}${kvRow('Assinatura', cx.signedDate ? fdate(cx.signedDate) : NI)}${kvRow('Valor contratado', Rn(cx.contracted ?? null))}${kvRow('Prazo contratado', cx.term ? cx.term + ' meses' : NI)}${kvRow('Meses restantes informados', cx.remaining != null ? cx.remaining + ' meses' : NI)}${kvRow('Taxa nominal vigente', cx.rate != null ? N(cx.rate, 2) + '% ao ano' : NI)}${kvRow('Juros com relacionamento', cx.relRate != null ? N(cx.relRate, 2) + '%' : NI)}${kvRow('Redutor', cx.reducer != null ? N(cx.reducer, 2) + '%' : NI)}${kvRow('Avaliação do imóvel pela CAIXA', Rn(cx.appraisal ?? null))}${kvRow('FGTS utilizado', Rn(cx.fgts ?? null))}${kvRow('Valor aprovado', Rn(cx.approved ?? null))}${kvRow('Valor liberado', Rn(cx.released ?? null))}${kvRow('Valor repassado à construtora', Rn(cx.repassed ?? null))}${kvRow('Principal amortizado', Rn(a.lastC && a.lastC.principalAmortized != null ? a.lastC.principalAmortized : null))}</div></details>
+   <div class="rowf wrap mt16"><button class="btn sm" data-act="aptInfo">${ic('pencil', 's')} Editar dados</button><button class="btn sm" data-act="caixaContrato">${ic('pencil', 's')} Dados do contrato</button></div></section>`;
+  const cury = `<section class="card s6"><div class="rowf between"><div class="rowf" style="gap:8px"><span class="pill bl">CURY</span><span class="ttl">Construtora</span></div></div><div class="lbl mt8">${ly ? 'Extrato de ' + fdate(ly.date) : 'Sem extrato registrado'}</div>
+   <div class="mt8">${kvRow('Valor do imóvel', Rn(ly && ly.valor != null ? ly.valor : (a.value || null)))}${kvRow('Quanto já paguei', Rn(a.curyPaid))}${kvRow('Quanto falta na Cury', Rn(a.curyToPay))}${kvRow('Quanto está vencido', `<span class="${a.curyOver ? 'neg' : ''}">${Rn(a.curyOver)}</span>`)}${kvRow('<b>Total pendente no extrato</b>', a.curyPending != null ? '<b>' + R(a.curyPending) + '</b>' : NI)}</div>
+   ${ly && (ly.nPaid != null || ly.total != null) ? `<div class="xs mu mt8">${ly.nPaid != null ? ly.nPaid + ' parcelas pagas · ' : ''}${ly.nToPay != null ? ly.nToPay + ' a pagar · ' : ''}${ly.nOver != null ? ly.nOver + ' vencida(s)' : ''}${ly.total != null ? ' · Total do extrato ' + R(ly.total) : ''}</div>` : ''}
+   ${a.entrada ? `<div class="mk">Entrada cadastrada: ${R(a.entrada)}</div><div class="lbl mt4">Esta entrada já está incluída no valor pago pela Cury?</div><select class="inp mt8" data-act="entradaInc" aria-label="Entrada incluída no valor pago"><option value="unknown" ${a.inc === 'unknown' ? 'selected' : ''}>Não sei</option><option value="sim" ${a.inc === 'sim' ? 'selected' : ''}>Sim</option><option value="nao" ${a.inc === 'nao' ? 'selected' : ''}>Não</option></select><div class="xs mu mt4">${a.inc === 'nao' ? 'Somada ao total pago.' : 'Enquanto não for "Não", a entrada não é somada de novo.'}</div>` : ''}
+   <div class="rowf wrap mt16"><button class="btn sm pri" data-act="curyPasteP">${ic('clipboard', 's')} Colar parcelas</button><button class="btn sm" data-act="curyHistForm">${ic('plus', 's')} Extrato</button></div></section>`;
+  const curyParcCard = (() => { const nums = [...new Set(d.apt.curyParcHist.map(x => x.n))].sort((x, y) => y - x).slice(0, 12); if (!nums.length) return ''; return `<section class="card s12"><div class="ch"><span class="ttl">Parcelas Cury <small>mais recentes</small></span></div><div class="tbl-w mt8"><table class="tbl"><thead><tr><th>Parcela</th><th>Vencimento</th><th class="r">Atualizado</th><th>Status</th><th></th></tr></thead><tbody>${nums.map(n => { const h = d.apt.curyParcHist.filter(x => x.n === n).sort((p, q) => q.date.localeCompare(p.date) || (q.recordedAt || 0) - (p.recordedAt || 0)); const x = h[0]; return `<tr><td class="fw6">${n}</td><td>${fdate(x.due)}</td><td class="r tnum">${R(x.updated)}</td><td>${x.status}</td><td class="r"><button class="btn sm gh" data-act="parcEvol" data-n="${n}">Evolução (${h.length})</button></td></tr>`; }).join('')}</tbody></table></div></section>`; })();
+  const obra = `<section class="card s12"><div class="ch"><span class="ttl">Andamento da obra</span></div>
+   <div class="grid mt8" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:20px"><div><div class="rowf between"><span class="pill bl">CURY</span><button class="btn sm gh" data-act="curyObraForm">${ic('pencil', 's')}</button></div>${kvRow('Status', cObra && cObra.status ? esc(cObra.status) : NI)}${kvRow('Entrega contratual', cObra && cObra.delivery ? esc(cObra.delivery) : NI)}${kvRow('Percentual geral', cObra && cObra.overall != null ? N(cObra.overall, 2) + '%' : NI)}<div class="mk">Fases detalhadas</div><div class="mt8">${PH.map(([k, l]) => kvRow(l, cObra && cObra.phases && cObra.phases[k] != null ? N(cObra.phases[k], 2) + '%' : NI)).join('')}</div></div>
+   <div><div class="rowf between"><span class="pill">CAIXA</span><button class="btn sm gh" data-act="caixaObraForm">${ic('pencil', 's')}</button></div>${kvRow('Andamento <b>medido</b>', kObra ? '<b>' + N(kObra.measured, 2) + '%</b>' : NI)}${kvRow('Última medição', kObra ? fdate(kObra.date) : NI)}${kvRow('Etapa', kObra && kObra.stage != null ? kObra.stage : NI)}${kvRow('Situação', kObra && kObra.situation ? esc(kObra.situation) : NI)}<div class="mk">Próximo previsto <span class="pill am">PREVISTO</span></div><div class="mt8">${kvRow('Próxima etapa', kObra && kObra.nextStage != null ? kObra.nextStage : NI)}${kvRow('Data prevista', kObra && kObra.nextDate ? fdate(kObra.nextDate) : NI)}${kvRow('Acumulado previsto', kObra && kObra.nextCum != null ? N(kObra.nextCum, 2) + '%' : NI)}</div><div class="xs mu mt8">${kObra ? N(kObra.measured, 2) + '% = medido · ' + (kObra.nextCum != null ? N(kObra.nextCum, 2) + '% = previsto. O previsto nunca substitui o medido.' : '') : ''}</div></div></div></section>`;
+  const caixa = `<section class="card s12"><div class="rowf wrap between"><div class="rowf" style="gap:8px"><span class="pill">CAIXA</span><span class="ttl">Minhas prestações — organização financeira</span></div><div class="rowf wrap"><button class="btn sm pri" data-act="caixaPasteP">${ic('clipboard', 's')} Colar prestações</button><button class="btn sm" data-act="caixaHistForm">${ic('plus', 's')} Saldo devedor</button></div></div>
+   <div class="kpis mt16"><div class="kpi"><div class="l">Já paguei</div><div class="n pos">${R(a.cxPaidSum)}</div><div class="s">${a.cxPaid.length} prestações</div></div><div class="kpi"><div class="l">Está atrasado</div><div class="n ${a.cxOverSum ? 'neg' : ''}">${R(a.cxOverSum)}</div><div class="s">${a.cxOver.length} vencida(s)</div></div><div class="kpi"><div class="l">Próxima parcela</div><div class="n" style="font-size:16px">${a.cxNext ? fdate(a.cxNext.due) : '—'}</div><div class="s">${a.cxNext ? R(a.cxNext.val) : 'Não informado'}</div></div><div class="kpi"><div class="l">Preciso pagar agora</div><div class="n">${R(a.cxNow)}</div><div class="s">atrasadas + em aberto</div></div><div class="kpi"><div class="l">Saldo devedor</div><div class="n" style="font-size:18px">${Rn(a.balance)}</div><div class="s">${a.balanceDate ? fdate(a.balanceDate) : ''}</div></div></div>
+   ${a.cxOver.length || a.cxOpen.length ? `<div class="mk">Para pagar (ordem de vencimento)</div><div class="mt8">${a.cxOver.map(p => `<div class="cat-row"><span>${fdate(p.due)} <span class="pill rd">vencida</span></span><span class="v">${R(p.val)}</span></div>`).join('')}${a.cxOpen.map(p => `<div class="cat-row"><span>${fdate(p.due)} <span class="pill am">em aberto</span></span><span class="v">${R(p.val)}</span></div>`).join('')}${kvRow('<b>Total atual aberto</b>', '<b>' + R(a.cxNow) + '</b>')}</div>` : ''}
+   ${est ? `<div class="rowf sm mt12" style="background:var(--amS);padding:10px 14px;border-radius:12px;align-items:flex-start"><span class="warn">${ic('alert', 's')}</span><span><b>ESTIMATIVA — NÃO OFICIAL:</b> ${fdate(est.due)} · ${R(est.val)}. Pode variar por juros, seguros, taxas e evolução da obra.</span></div>` : ''}
+   ${a.cxPaid.length ? `<div class="mk">Prestações pagas</div>${Object.keys(byYear).sort().map(y => `<details class="mt8" ${y === String(new Date().getFullYear()) ? 'open' : ''}><summary class="sm fw6" style="cursor:pointer">${y} — total ${R(sum(byYear[y].map(p => p.val)))}</summary><div class="mt4">${sumRows(byYear[y])}</div></details>`).join('')}<div class="mt8">${kvRow('<b>Total pago (prestações)</b>', '<b>' + R(a.cxPaidSum) + '</b>')}</div><div class="xs mu mt4">Isto é o que você pagou em prestações — não é o principal amortizado.</div>` : ''}</section>`;
+  const amort = `<section class="card s6"><div class="ch"><span class="ttl">Quero amortizar</span></div><div class="lbl mt8">Amortizar é pagar um valor extra do saldo devedor. Você escolhe: <b>reduzir o prazo</b> (a prestação fica igual e o financiamento termina antes) ou <b>reduzir a prestação</b> (o prazo fica igual e a parcela diminui).</div><div class="rowf wrap mt12"><button class="btn sm pri" data-act="amortForm">Simular</button></div><div class="xs mu mt8">Sem os dados do contrato (taxa, meses restantes e sistema), o app não calcula: nunca inventa.</div></section>
+   <section class="card s6"><div class="rowf between"><span class="ttl">Meta de amortização</span><button class="btn sm" data-act="amortGoalForm">${ic('pencil', 's')} ${g ? 'Editar' : 'Definir'}</button></div>${g ? `<div class="mt12">${pbar(g.target ? (g.saved || 0) / g.target * 100 : 0, 'gr lg')}</div><div class="mt8">${kvRow('Meta', R(g.target))}${kvRow('Data alvo', fdate(g.date))}${kvRow('Já reservado', R(g.saved || 0))}${kvRow('Quanto falta', R(gRest))}${kvRow('Meses restantes', gm)}${kvRow('Guardar por mês', gm ? R(gRest / gm) : '—')}</div>` : '<div class="lbl mt8">Defina quanto quer juntar para amortizar e até quando.</div>'}</section>`;
+  const total = `<section class="card s12"><div class="ch"><span class="ttl">Total realmente pago <small>sem contar nada duas vezes</small></span></div><div class="kpis mt8"><div class="kpi"><div class="l">Cury</div><div class="n">${Rn(a.curyPaid)}</div></div><div class="kpi"><div class="l">CAIXA (prestações)</div><div class="n">${R(a.cxPaidSum)}</div></div><div class="kpi"><div class="l"><b>Total confirmado</b></div><div class="n">${a.totalPaid != null ? R(a.totalPaid) : NI}</div></div></div><div class="xs mu mt8">Entrada de ${a.entrada ? R(a.entrada) : '—'} ${a.inc === 'nao' ? 'somada.' : 'não somada (ainda não sabemos se já está nos valores pagos à Cury).'} Não entram valores liberados pela CAIXA à construtora.</div></section>`;
+  return `<div class="s12"><div class="md2" style="margin:8px 2px 0">Cury × CAIXA</div><div class="lbl" style="margin:0 2px">Cada conceito separado: imóvel, financiamento, o que já foi pago, o que falta e o que está vencido.</div></div>${imovel}${cury}${curyParcCard}${caixa}${obra}${amort}${total}`;
+}
+CHG.entradaInc = el => { D().apt.info.entradaIncluida = el.value; commit('Preferência salva'); };
+Object.assign(ACT, { caixaContrato: caixaContratoForm, curyPasteP: () => finTextPaste('cury'), caixaPasteP: () => finTextPaste('caixa'), finRowTog: el => { IMPF.rows[+el.dataset.i].on = !IMPF.rows[+el.dataset.i].on; finTextPreview(); }, finRowsSave, parcEvol: el => parcEvolModal(+el.dataset.n), amortForm, amortGoalForm, curyObraForm, caixaObraForm });
 
 /* ---------- formulários ---------- */
 const moneyOr = v => (v === null || v === undefined || v === '') ? null : v;
@@ -3416,6 +3548,88 @@ function demoCury(d) {
   a.curyHist.push({ id: id(), date: dateOff(-60), valor: 480000, paid: 118000, toPay: 362000, overdue: 0, source: 'Cury' }, { id: id(), date: dateOff(-12), valor: 480000, paid: 120000, toPay: 360000, overdue: 1800, source: 'Cury' });
   a.parc.forEach(p => { if (p.type === 'Financiamento') p.payer = 'caixa'; });
 }
+
+
+/* =====================================================================
+   DADOS REAIS INFORMADOS (Cury × CAIXA + avaliação) — idempotente, só aditivo/mesclado
+   ===================================================================== */
+function seedReal2(d) {
+  if (d.seeds.curyCaixa1) return false;
+  const a = d.apt, T = '2026-11-10', now = Date.now(), has = (arr, id) => arr.some(x => x.id === id);
+  if (!a.info) a.info = { name: 'Apartamento', builder: 'Cury' };
+  Object.assign(a.info, { value: 291038.7, valueSource: 'cury', valueDate: T });
+  if (a.info.entrada == null || a.info.entrada === '') a.info.entrada = 800;
+  if (!a.info.entradaIncluida) a.info.entradaIncluida = 'unknown';
+  const cx0 = a.caixa || {}, want = { contractNo: '878772466348-0', signedDate: '2025-09-03', contracted: 275200, originalFinanced: 275200, term: 420, remaining: 420, rate: 7.66, relRate: 7.66, reducer: 0, appraisal: 344000, fgts: 0 };
+  if (a.caixa && Object.keys(want).some(k => cx0[k] !== undefined && cx0[k] !== null && cx0[k] !== want[k])) a.caixaLog.push({ id: uid(), date: todayISO(), at: now, prev: { ...a.caixa } });
+  a.caixa = { approved: null, released: null, repassed: null, ...cx0, ...want, source: 'Informado' };
+  if (!a.caixaHist.some(h => h.date === T && h.balance === 130722.04)) a.caixaHist.push({ id: 'seed-cx-bal-20261110', date: T, balance: 130722.04, principalAmortized: null, source: 'Informado', recordedAt: now });
+  if (!a.curyHist.some(h => h.date === T && h.valor === 291038.7)) a.curyHist.push({ id: 'seed-cury-20261110', date: T, valor: 291038.7, paid: 9511, toPay: 6776.82, overdue: 440.33, nPaid: 22, nToPay: 16, nOver: 1, total: 16728.15, source: 'Cury', recordedAt: now });
+  const pres = [['2025-10-04', 402.58, 1], ['2025-11-04', 463.74, 1], ['2025-12-04', 453.76, 1], ['2026-01-04', 512.57, 1], ['2026-02-04', 546.48, 1], ['2026-03-04', 535.09, 1], ['2026-04-04', 631.92, 1], ['2026-05-04', 725.24, 1], ['2026-06-04', 721.1, 1], ['2026-07-04', 798.64, 1], ['2026-08-04', 914.5, 1], ['2026-09-04', 983.5, 1], ['2026-10-04', 1046.51, 0], ['2026-11-04', 1093.85, 0], ['2026-12-04', 1094.43, 0]];
+  pres.forEach(([due, val, paid]) => {
+    const p = a.parc.find(x => x.due === due && (x.payer === 'caixa' || x.type === 'Financiamento'));
+    if (p) { if (p.val !== val || !!p.paid !== !!paid) p.hist = [...(p.hist || []), { at: now, date: T, val: p.val, paid: !!p.paid }]; Object.assign(p, { payer: 'caixa', type: 'Financiamento', val, paid: !!paid, paidDate: paid ? (p.paidDate || due) : '' }); if (!p.desc) p.desc = 'Prestação CAIXA'; }
+    else a.parc.push({ id: 'seed-cx-' + due, desc: 'Prestação CAIXA', type: 'Financiamento', payer: 'caixa', val, due, paid: !!paid, paidDate: paid ? due : '', source: 'Informado' });
+  });
+  if (!has(a.curyObra, 'seed-curyobra-20261110')) a.curyObra.push({ id: 'seed-curyobra-20261110', date: T, status: 'Em obra', delivery: 'EM BREVE', overall: null, phases: { fund: 81.4, estr: 30.71, alv: 27.99, ele: 9.45, hid: 5.2, ai: 1.37, ae: 0, serv: 7.77, pint: 0 }, recordedAt: now });
+  if (!has(a.caixaObra, 'seed-caixaobra-20261021')) a.caixaObra.push({ id: 'seed-caixaobra-20261021', date: '2026-10-21', measured: 38.34, stage: 16, situation: 'Liberada Paga', nextStage: 17, nextDate: '2026-11-11', nextCum: 39.78, recordedAt: now });
+  if (!d.body.some(b => b.date === T && b.gord === 36.8) && !has(d.body, 'seed-eval-20261110')) d.body.push({ id: 'seed-eval-20261110', date: T, kind: 'avaliacao', source: 'Avaliação física', recordedAt: now, magra: 27.5, gord: 36.8, magraPct: 63.2, muscPct: 27.5, ossea: 0, agua: 45.0, imc: 23.79, bmr: 1328.87, visc: 2.5, pesoIdeal: 54, pesoIdealMin: 44, pesoIdealMax: 64, idadeCorp: 0, cls: { musc: 'Baixo', gord: 'Muito alto', ossea: 'Baixo', agua: 'Insuficiente', imc: 'Normal', visc: 'Baixo' }, revisar: ['ossea', 'idadeCorp'], obs: 'Valores e classificações da fonte. Sem diagnóstico médico.' });
+  d.seeds.curyCaixa1 = now; return true;
+}
+const CLS_L = { musc: 'Músculos', gord: 'Gordura', ossea: 'Massa óssea', agua: 'Água', imc: 'IMC', visc: 'Visceral' };
+const srcCls = ev => ev.cls || (ev.revisar && ev.revisar.length) ? `<div class="mk">Classificação da fonte</div><div class="rowf wrap mt8" style="gap:6px">${Object.entries(ev.cls || {}).map(([k, v]) => `<span class="pill">${CLS_L[k] || k}: ${esc(v)}</span>`).join('')}${(ev.revisar || []).map(k => `<span class="pill am">${k === 'ossea' ? 'Massa óssea' : k === 'idadeCorp' ? 'Idade corporal' : k}: valor da fonte — revisar</span>`).join('')}</div><div class="xs mu mt4">Classificações vindas da própria fonte. Sem diagnóstico médico.</div>` : '';
+
+/* =====================================================================
+   GOOGLE AGENDA (somente leitura: Google → Vida Gabriela). Sem Gmail.
+   Para ativar: preencha GOOGLE_CLIENT_ID (OAuth Client ID do tipo "Web").
+   ===================================================================== */
+const GOOGLE_CLIENT_ID = '';
+const GCAL = { token: '', exp: 0 };
+const gcfg = () => { const s = D().settings; if (!s.google) s.google = { connected: false, calendars: [], lastSync: '' }; return s.google; };
+async function loadGIS() { if (window.google && google.accounts && google.accounts.oauth2) return; await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = res; s.onerror = () => rej(new Error('Não foi possível carregar o Google (sem internet?).')); document.head.appendChild(s); }); }
+async function gcalToken(interactive) {
+  if (GCAL.token && Date.now() < GCAL.exp) return GCAL.token;
+  if (!GOOGLE_CLIENT_ID) { toast('Configure o Google Calendar para conectar sua conta.', 'err'); return ''; }
+  await loadGIS();
+  return new Promise((res, rej) => { const c = google.accounts.oauth2.initTokenClient({ client_id: GOOGLE_CLIENT_ID, scope: 'https://www.googleapis.com/auth/calendar.readonly', callback: r => { if (r.error) { rej(new Error(r.error)); return; } GCAL.token = r.access_token; GCAL.exp = Date.now() + ((+r.expires_in || 3600) - 60) * 1000; res(GCAL.token); } }); c.requestAccessToken({ prompt: interactive ? 'consent' : '' }); });
+}
+const gapi = async path => { const r = await fetch('https://www.googleapis.com/calendar/v3' + path, { headers: { Authorization: 'Bearer ' + GCAL.token } }); if (!r.ok) throw new Error('Google respondeu ' + r.status); return r.json(); };
+async function gcalConnect() {
+  if (isDemo()) { toast('Indisponível na demonstração.', 'err'); return; }
+  try { if (!await gcalToken(true)) return; gcfg().connected = true; commit('Google Agenda conectado (somente leitura)'); await gcalManage(); } catch (e) { toast('Não foi possível conectar: ' + e.message, 'err'); }
+}
+async function gcalManage() {
+  try {
+    if (!await gcalToken(false)) return; const l = (await gapi('/users/me/calendarList?minAccessRole=reader')).items || [], sel = new Set(gcfg().calendars.map(c => c.id));
+    window.__gcal = l; openHTML(`<div class="dh"><div><h3>Gerenciar calendários</h3><p>Escolha de quais calendários trazer eventos. Somente leitura.</p></div><button class="ib" data-close aria-label="Fechar">${ic('x')}</button></div><div class="db"><div class="list">${l.map((c, i) => `<label class="li" style="cursor:pointer"><input type="checkbox" data-gc="${i}" ${sel.has(c.id) ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--bl)"><div class="n">${esc(c.summary || c.id)}<small>${c.primary ? 'principal' : esc(c.accessRole || '')}</small></div></label>`).join('')}</div></div><div class="df"><button class="btn" data-close>Cancelar</button><button class="btn pri" data-act="gcalSaveSel">Salvar e sincronizar</button></div>`);
+  } catch (e) { toast('Não foi possível listar os calendários: ' + e.message, 'err'); }
+}
+async function gcalSync() {
+  if (isDemo()) { toast('Indisponível na demonstração.', 'err'); return; }
+  const cfg = gcfg(); if (!cfg.calendars.length) { await gcalManage(); return; }
+  try {
+    if (!await gcalToken(false)) return; const d = D(), t0 = new Date(Date.now() - 30 * 864e5).toISOString(), t1 = new Date(Date.now() + 365 * 864e5).toISOString(); let nNew = 0, nUp = 0;
+    for (const cal of cfg.calendars) {
+      const r = await gapi(`/calendars/${encodeURIComponent(cal.id)}/events?singleEvents=true&orderBy=startTime&maxResults=250&timeMin=${encodeURIComponent(t0)}&timeMax=${encodeURIComponent(t1)}`);
+      for (const ev of r.items || []) {
+        if (ev.status === 'cancelled') continue; const s = ev.start || {}, date = (s.date || (s.dateTime || '').slice(0, 10)), time = s.dateTime ? s.dateTime.slice(11, 16) : ''; if (!date) continue;
+        const o = { title: ev.summary || '(sem título)', date, time, cat: 'Pessoal', notes: '', source: 'google', googleCalendarId: cal.id, googleEventId: ev.id, locked: true }, ex = d.events.find(x => x.googleCalendarId === cal.id && x.googleEventId === ev.id);
+        if (ex) { if (ex.title !== o.title || ex.date !== o.date || ex.time !== o.time) { Object.assign(ex, o); nUp++; } } else { d.events.push({ id: uid(), ...o }); nNew++; }
+      }
+    }
+    cfg.lastSync = new Date().toISOString(); commit(`Google Agenda: ${nNew} novo(s), ${nUp} atualizado(s)`);
+  } catch (e) { toast('Não foi possível sincronizar: ' + e.message, 'err'); }
+}
+function gcalDisconnect() { try { if (GCAL.token && window.google) google.accounts.oauth2.revoke(GCAL.token, () => { }); } catch (e) { } GCAL.token = ''; GCAL.exp = 0; D().settings.google = { connected: false, calendars: [], lastSync: '' }; commit('Google Agenda desconectado (os eventos já importados continuam)'); }
+function gcalCard() {
+  const g = (D().settings.google) || { connected: false, calendars: [] }, noCfg = !GOOGLE_CLIENT_ID;
+  return `<section class="card s12"><div class="rowf wrap between"><div class="rowf"><div class="ico">${ic('calendar')}</div><div><b class="sm fw6">Google Agenda</b><div class="lbl">${noCfg ? 'Configure o Google Calendar para conectar sua conta.' : g.connected ? 'Conectado · somente leitura (Google → Vida Gabriela)' + (g.lastSync ? ' · última sincronização ' + new Date(g.lastSync).toLocaleString('pt-BR') : '') : 'Traz seus eventos do Google. Só o calendário — sem Gmail, sem e-mails.'}</div></div></div>
+  <div class="rowf wrap"><button class="btn sm ${g.connected ? '' : 'pri'}" data-act="gcalConnect">Conectar Google Agenda</button><button class="btn sm" data-act="gcalSync" ${g.connected ? '' : 'disabled'}>Sincronizar agora</button><button class="btn sm" data-act="gcalManage" ${g.connected ? '' : 'disabled'}>Gerenciar calendários</button><button class="btn sm dng" data-act="gcalDisc" ${g.connected ? '' : 'disabled'}>Desconectar</button></div></div></section>`;
+}
+Object.assign(ACT, {
+  gcalConnect, gcalSync, gcalManage, gcalDisc: gcalDisconnect,
+  gcalSaveSel: () => { const l = window.__gcal || [], sel = $$('#dlg [data-gc]').filter(i => i.checked).map(i => ({ id: l[+i.dataset.gc].id, name: l[+i.dataset.gc].summary })); gcfg().calendars = sel; const dl = $('#dlg'); dl.open && dl.close(); commit(sel.length + ' calendário(s) selecionado(s)'); if (sel.length) gcalSync(); },
+});
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
