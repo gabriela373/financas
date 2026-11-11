@@ -214,9 +214,6 @@ hr.sep{border:0;border-top:1px solid var(--ln);margin:14px 0}
 .chk:hover{border-color:var(--bl)}
 .chk.on{background:var(--gr);border-color:var(--gr);color:#fff}
 .chk svg{width:12px;height:12px;stroke-width:3}
-.ico{width:36px;height:36px;border-radius:11px;background:var(--blS);color:var(--bl);display:grid;place-items:center;flex:none}
-.ico.gr{background:var(--grS);color:var(--gr)}.ico.am{background:var(--amS);color:var(--am)}.ico.rd{background:var(--rdS);color:var(--rd)}.ico.gy{background:var(--sub);color:var(--mu)}.ico.t{background:#d8f6f1;color:#0d9488}.ico.v{background:#ede7ff;color:#7c3aed}
-:root[data-theme="dark"] .ico.t{background:#0d2d2a}:root[data-theme="dark"] .ico.v{background:#251d45}
 
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
@@ -416,6 +413,173 @@ input[type=color].inp{padding:3px;height:42px;cursor:pointer}
 @keyframes rot{to{transform:rotate(360deg)}}
 
 /* =====================================================================
+   REFINAMENTO VISUAL PREMIUM — somente aparência (nenhum dado/lógica)
+   Família única de ícones squircle (gradiente + brilho + símbolo branco),
+   cards leves, botões com profundidade, microinterações só no desktop.
+   ===================================================================== */
+:root{
+  --r:22px; --r2:15px;
+  --sh:0 1px 2px rgba(16,24,40,.04),0 3px 10px -4px rgba(16,24,40,.06);
+  --sh-hov:0 2px 4px rgba(16,24,40,.05),0 16px 32px -16px rgba(16,24,40,.24);
+  --ring:0 0 0 3px color-mix(in srgb,var(--bl) 24%,transparent);
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+:root[data-theme="dark"]{
+  --sh:0 0 0 1px rgba(255,255,255,.025),0 8px 24px -14px rgba(0,0,0,.55);
+  --sh-hov:0 0 0 1px rgba(255,255,255,.05),0 18px 36px -16px rgba(0,0,0,.75);
+  --ring:0 0 0 3px color-mix(in srgb,var(--bl) 38%,transparent);
+}
+body{text-rendering:optimizeLegibility}
+
+/* ---------- família de ícones (squircle iOS) ---------- */
+.ill,.ico{--g1:#6aa5ff;--g2:#2f6df0;--g3:#1747b8;--gs:23,71,184}
+.ill.a,.ico.a{--g1:#8fd3ff;--g2:#39a4f5;--g3:#1b72cc;--gs:27,114,204}
+.ill.v,.ico.v{--g1:#b6a0ff;--g2:#7e5ff0;--g3:#5236c6;--gs:82,54,198}
+.ill.t,.ico.t{--g1:#93a6ff;--g2:#5b66f2;--g3:#3b35c6;--gs:59,53,198}
+.ill.s,.ico.gy{--g1:#a9bad6;--g2:#6682ad;--g3:#3f5880;--gs:63,88,128}
+.ill.k{--g1:#a3bddb;--g2:#5f8ab8;--g3:#3a6190;--gs:58,97,144}
+.ill.r,.ico.rd{--g1:#ff9fb4;--g2:#f2506f;--g3:#c52250;--gs:197,34,80}
+.ill.g,.ico.gr{--g1:#79e3a6;--g2:#26bb68;--g3:#0f8c48;--gs:15,140,72}
+.ill.am,.ico.am{--g1:#ffd884;--g2:#f6a82a;--g3:#c97b08;--gs:201,123,8}
+.ill{background:linear-gradient(160deg,var(--g1) 0%,var(--g2) 46%,var(--g3) 100%);
+  box-shadow:0 14px 22px -12px rgba(var(--gs),.7),0 2px 5px rgba(var(--gs),.26),inset 0 1px 0 rgba(255,255,255,.62),inset 0 0 0 1px rgba(255,255,255,.1),inset 0 -8px 14px rgba(0,0,0,.16)}
+.ill svg{filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28))}
+.ico{width:36px;height:36px;border-radius:11px;color:#fff;position:relative;overflow:hidden;flex:none;display:grid;place-items:center;
+  background:linear-gradient(160deg,var(--g1) 0%,var(--g2) 48%,var(--g3) 100%);
+  box-shadow:0 6px 10px -6px rgba(var(--gs),.6),0 1px 2px rgba(var(--gs),.22),inset 0 1px 0 rgba(255,255,255,.55),inset 0 0 0 1px rgba(255,255,255,.08),inset 0 -4px 7px rgba(0,0,0,.14)}
+.ico::before{content:"";position:absolute;left:0;right:0;top:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,0));pointer-events:none}
+.ico svg,.ico b{position:relative}
+.ico svg{stroke-width:1.7;filter:drop-shadow(0 1px 1px rgba(0,0,0,.22))}
+.ico b{text-shadow:0 1px 1px rgba(0,0,0,.25);letter-spacing:.02em}
+:root[data-theme="dark"] .ill,:root[data-theme="dark"] .ico{filter:saturate(.88) brightness(.93);
+  box-shadow:0 12px 20px -12px rgba(0,0,0,.8),0 1px 3px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.34),inset 0 0 0 1px rgba(255,255,255,.07),inset 0 -8px 14px rgba(0,0,0,.28)}
+:root[data-theme="dark"] .ico{box-shadow:0 6px 10px -6px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.3),inset 0 -4px 7px rgba(0,0,0,.25)}
+.empty .eic{width:52px;height:52px;border-radius:30%;background:linear-gradient(160deg,var(--sub),var(--sub2));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 10px -6px rgba(16,24,40,.2)}
+:root[data-theme="dark"] .empty .eic{box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+
+/* ilustração discreta (SVG local, marca d'água) e brilho de canto */
+.card{isolation:isolate;--gs:23,71,184}
+.card:has(>.ill.a){--gs:27,114,204}.card:has(>.ill.v){--gs:82,54,198}.card:has(>.ill.t){--gs:59,53,198}
+.card:has(>.ill.s){--gs:63,88,128}.card:has(>.ill.k){--gs:58,97,144}.card:has(>.ill.r){--gs:197,34,80}.card:has(>.ill.g){--gs:15,140,72}
+.card:has(>.ill){background-image:radial-gradient(300px 170px at 100% 0,rgba(var(--gs),.065),transparent 72%)}
+:root[data-theme="dark"] .card:has(>.ill){background-image:radial-gradient(300px 170px at 100% 0,rgba(var(--gs),.16),transparent 72%)}
+.wm{position:absolute;right:16px;bottom:12px;width:108px;height:108px;z-index:-1;pointer-events:none;fill:none;stroke:currentColor;stroke-width:.8;stroke-linecap:round;stroke-linejoin:round;color:rgba(var(--gs),.085)}
+:root[data-theme="dark"] .wm{color:rgba(255,255,255,.05)}
+
+/* ---------- cards ---------- */
+.card{border-color:color-mix(in srgb,var(--ln) 90%,transparent);transition:box-shadow .25s var(--ease),transform .25s var(--ease),border-color .25s}
+.card:hover{box-shadow:var(--sh),0 12px 28px -16px rgba(16,24,40,.2)}
+:root[data-theme="dark"] .card:hover{box-shadow:var(--sh)}
+.ch .ttl,.ttl{font-size:13px;font-weight:600;color:var(--tx2);letter-spacing:.005em}
+.ttl small{color:var(--mu2);font-weight:500}
+.lbl{color:var(--mu);line-height:1.4}
+.kpi{border-radius:16px;background:linear-gradient(180deg,var(--sub),color-mix(in srgb,var(--sub) 70%,var(--sub2)));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ln) 70%,transparent)}
+.kpi .l{font-weight:500}
+.goal,.doc,.exc{border-radius:18px}
+.doc .th{background:linear-gradient(160deg,var(--sub),var(--sub2))}
+.exc{box-shadow:0 1px 2px rgba(16,24,40,.03);transition:box-shadow .2s var(--ease)}
+.acc{border-radius:var(--r)}
+dialog.dlg{border-radius:26px;box-shadow:0 40px 90px -18px rgba(8,12,24,.45),0 0 0 1px rgba(16,24,40,.05)}
+:root[data-theme="dark"] dialog.dlg{box-shadow:0 40px 90px -18px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.07)}
+.menu{border-radius:18px;box-shadow:var(--sh2),0 0 0 1px rgba(16,24,40,.03)}
+.menu button{border-radius:11px}
+.toast{border-radius:14px}
+.login{border-radius:26px}
+
+/* ---------- botões ---------- */
+.btn{border-radius:11px;border-color:var(--ln2);box-shadow:0 1px 1px rgba(16,24,40,.04),0 1px 3px -1px rgba(16,24,40,.06);transition:background .18s,border-color .18s,box-shadow .2s var(--ease),transform .12s var(--ease),filter .18s}
+.btn:hover{background:var(--sub);box-shadow:0 2px 8px -3px rgba(16,24,40,.16)}
+.btn:active{transform:translateY(1px) scale(.985);box-shadow:none}
+.btn:focus-visible{outline:0;box-shadow:var(--ring)}
+.btn.pri{background:linear-gradient(180deg,#5b95ff 0%,var(--bl2) 42%,var(--bl) 100%);border-color:color-mix(in srgb,var(--bl) 85%,#001a66);text-shadow:0 1px 1px rgba(0,20,90,.25);
+  box-shadow:0 1px 2px rgba(23,71,184,.38),0 8px 16px -8px rgba(31,95,224,.6),inset 0 1px 0 rgba(255,255,255,.32)}
+.btn.pri:hover{background:linear-gradient(180deg,#6aa0ff 0%,#3a79f7 42%,#2569eb 100%);box-shadow:0 2px 4px rgba(23,71,184,.35),0 12px 22px -8px rgba(31,95,224,.65),inset 0 1px 0 rgba(255,255,255,.38)}
+.btn.pri:active{box-shadow:0 1px 2px rgba(23,71,184,.4),inset 0 2px 4px rgba(0,20,90,.25)}
+.btn.pri:focus-visible{box-shadow:var(--ring),0 1px 2px rgba(23,71,184,.38)}
+.btn.gh,.btn.dng{box-shadow:none}
+.btn.dng:hover{box-shadow:none}
+.btn.gh:hover{box-shadow:none}
+:root[data-theme="dark"] .btn{box-shadow:none}
+:root[data-theme="dark"] .btn:hover{box-shadow:0 0 0 1px rgba(255,255,255,.04)}
+:root[data-theme="dark"] .btn.pri{box-shadow:0 1px 2px rgba(0,0,0,.5),0 8px 16px -8px rgba(59,123,255,.45),inset 0 1px 0 rgba(255,255,255,.28)}
+.split .caret{background:linear-gradient(180deg,var(--bl2),var(--bl));box-shadow:inset 0 1px 0 rgba(255,255,255,.28);transition:filter .18s}
+.split .caret:hover{filter:brightness(1.08)}
+.ib{border-radius:11px;transition:background .18s,color .18s,transform .12s var(--ease),box-shadow .2s}
+.ib:active{transform:scale(.94)}
+.ib.bord{box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.fchip{box-shadow:0 1px 1px rgba(16,24,40,.03)}
+.fchip.on{box-shadow:0 4px 10px -4px rgba(15,23,42,.45)}
+.tabs{box-shadow:inset 0 1px 2px rgba(16,24,40,.05)}
+.tabs button.on{box-shadow:0 1px 2px rgba(16,24,40,.1),0 3px 8px -3px rgba(16,24,40,.12)}
+.inp{border-radius:12px}
+.inp:focus{box-shadow:var(--ring)}
+.daychip.on{box-shadow:0 8px 16px -8px var(--bl),inset 0 1px 0 rgba(255,255,255,.3)}
+
+/* ---------- sidebar e cabeçalho ---------- */
+.side{box-shadow:var(--sh)}
+.brand .avatar,.me .avatar,.login .avatar{background:linear-gradient(150deg,#6aa5ff 0%,#2f6df0 50%,#1747b8 100%);box-shadow:0 8px 14px -6px rgba(31,95,224,.6),inset 0 1px 0 rgba(255,255,255,.45),inset 0 0 0 1px rgba(255,255,255,.1)}
+.brand b{letter-spacing:-.015em;font-size:14.5px}
+.nav{gap:10px;padding:6px 9px;border-radius:13px;font-weight:500;transition:background .18s,color .18s,transform .15s var(--ease)}
+.nav svg{width:30px;height:30px;padding:6px;border-radius:10px;background:var(--sub);color:var(--mu);transition:background .18s,color .18s,box-shadow .18s}
+.nav:hover{background:color-mix(in srgb,var(--sub) 70%,transparent)}
+.nav:hover svg{background:var(--sub2);color:var(--tx2)}
+.nav.on{background:var(--blS);color:var(--blT);font-weight:700}
+.nav.on svg{background:var(--card);color:var(--bl);box-shadow:0 2px 6px -2px rgba(31,95,224,.35),inset 0 0 0 1px color-mix(in srgb,var(--bl) 14%,transparent)}
+.nav.demo.on svg{color:var(--am)}
+.nav-h{letter-spacing:.08em;font-size:10.5px}
+.theme .tg{box-shadow:inset 0 1px 2px rgba(16,24,40,.06)}
+.theme .tg button.on{box-shadow:0 1px 2px rgba(16,24,40,.1),0 3px 6px -3px rgba(16,24,40,.15)}
+.me{border-radius:14px}
+.top{box-shadow:var(--sh)}
+.top h1{font-weight:700;letter-spacing:-.028em}
+.top h1 em{font-weight:500;color:var(--mu2)}
+.demo-bar{border-radius:var(--r2)}
+
+/* ---------- indicadores, pills, progresso ---------- */
+.pill{padding:3px 10px;gap:6px;letter-spacing:0}
+.pill.gr,.pill.rd,.pill.am,.pill.bl{box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 14%,transparent)}
+.pill.gr:not(:has(svg))::before,.pill.rd:not(:has(svg))::before,.pill.am:not(:has(svg))::before,.pill.bl:not(:has(svg))::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.8;flex:none}
+.pbar{height:8px;background:var(--sub2);box-shadow:inset 0 1px 2px rgba(16,24,40,.07)}
+.pbar>i{background:linear-gradient(90deg,#6aa5ff,var(--bl));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px -2px rgba(31,95,224,.5)}
+.pbar.gr>i{background:linear-gradient(90deg,#5fe09a,var(--gr));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px -2px rgba(22,163,74,.5)}
+.pbar.rd>i{background:linear-gradient(90deg,#ff8aa3,var(--rd));box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 6px -2px rgba(225,29,72,.45)}
+.pbar.am>i{background:linear-gradient(90deg,#ffc659,var(--am));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px -2px rgba(217,119,6,.45)}
+.pbar.t>i{background:linear-gradient(90deg,#5eead4,var(--g-fitness));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 6px -2px rgba(20,184,166,.45)}
+:root[data-theme="dark"] .pbar{box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+:root[data-theme="dark"] .pbar>i{box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.ph .pbar{height:7px}
+.ph .rowf{font-weight:500}
+.seg{box-shadow:inset 0 1px 2px rgba(16,24,40,.07)}
+.chk.on{background:linear-gradient(180deg,#4ade80,var(--gr));border-color:var(--gr);box-shadow:0 2px 6px -2px rgba(22,163,74,.55)}
+.dwk .d.on{background:linear-gradient(160deg,#5eead4,var(--g-fitness));box-shadow:0 4px 10px -4px rgba(20,184,166,.6),inset 0 1px 0 rgba(255,255,255,.4)}
+
+/* ---------- tabelas e listas ---------- */
+.tbl th{font-size:10.5px;letter-spacing:.08em;padding:9px 12px;border-bottom:1px solid var(--ln2);color:var(--mu2)}
+.tbl td{padding:12px;border-bottom:1px solid color-mix(in srgb,var(--ln) 80%,transparent)}
+.tbl tr{transition:background .15s}
+.tbl tr:hover td{background:color-mix(in srgb,var(--sub) 85%,transparent)}
+.list>.li{padding:12px 0;border-top-color:color-mix(in srgb,var(--ln) 80%,transparent)}
+.cal .dc{border-radius:14px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ln) 55%,transparent)}
+.cal .dc.td{box-shadow:0 0 0 1px var(--bl) inset}
+.cal .ec{border-radius:7px;box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.ev .dt{border-radius:13px;background:linear-gradient(180deg,var(--sub),var(--sub2));box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+:root[data-theme="dark"] .ev .dt{box-shadow:none}
+
+/* ---------- microinterações (somente desktop com mouse) ---------- */
+@media (hover:hover) and (pointer:fine){
+  .doc:hover,.goal:hover,button.kpi:hover,.cc:hover,.card.clk:hover{transform:translateY(-2px);box-shadow:var(--sh-hov)}
+  .exc:hover{box-shadow:0 8px 20px -12px rgba(16,24,40,.2)}
+  .btn:not(.gh):not(:disabled):hover{transform:translateY(-1px)}
+  .btn:not(:disabled):active{transform:translateY(0) scale(.985)}
+  .nav:hover{transform:translateX(1px)}
+  .card:hover>.ill{transform:translateY(-2px) scale(1.04)}
+  .li.clk:hover .ico,.ev:hover .dt{transform:translateY(-1px)}
+}
+.ill{transition:transform .35s var(--ease),box-shadow .35s}
+.ico{transition:transform .2s var(--ease)}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+/* =====================================================================
    RESPONSIVE
    ===================================================================== */
 @media(max-width:1280px){
@@ -458,6 +622,7 @@ input[type=color].inp{padding:3px;height:42px;cursor:pointer}
   #toasts{left:12px;right:12px;bottom:12px}
 }
 @media(max-width:420px){.top h1 em{display:none}.top .month h1{font-size:17px}}
+@media(max-width:760px){.wm{display:none}.nav svg{width:30px;height:30px}.ico{width:34px;height:34px}.card:has(>.ill){background-image:radial-gradient(220px 130px at 100% 0,rgba(var(--gs),.06),transparent 72%)}}
 @media print{.side,.top,.demo-bar{display:none}}
 </style>
 </head>
@@ -536,7 +701,12 @@ const ICONS = {
   dash: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
   wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
   building: '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4M10 10h4M10 14h4M10 18h4"/>',
-  dumbbell: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
+  dumbbell: '<rect x="5" y="6" width="3" height="12" rx="1.1"/><rect x="16" y="6" width="3" height="12" rx="1.1"/><path d="M8 12h8M2.5 9.5v5M21.5 9.5v5"/>',
+  safe: '<rect x="3" y="3.5" width="18" height="15" rx="2.6"/><circle cx="12" cy="11" r="3.4"/><circle cx="12" cy="11" r=".7" fill="currentColor"/><path d="M12 7.6v1M12 13.4v1M8.6 11h1M14.4 11h1"/><path d="M7 18.5V21M17 18.5V21"/>',
+  gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  heartpulse: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
+  homecoin: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.2V19a2 2 0 0 0 2 2h4.2"/><path d="M19 9.2v2.3"/><circle cx="17" cy="17" r="4.4"/><path d="M17 14.8v4.4M18.4 15.9h-2.1a.9.9 0 0 0 0 1.8h1.4a.9.9 0 0 1 0 1.8h-2.2"/>',
+  cashcal: '<path d="M8 2v4M16 2v4"/><path d="M21 11.2V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6.4"/><path d="M3 10h18"/><circle cx="17.5" cy="17.5" r="4.6"/><path d="M17.5 15.2v4.6M18.9 16.4h-2.2a.9.9 0 0 0 0 1.8h1.6a.9.9 0 0 1 0 1.8h-2.3"/>',
   calendar: '<path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
   target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
   file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8M16 13H8M16 17H8"/>',
@@ -1310,7 +1480,7 @@ function openHTML(html, wide) {
 }
 
 /* ---------- componentes ---------- */
-const illus = (icon, cls = '') => `<div class="ill ${cls}">${ic(icon)}</div>`;
+const illus = (icon, cls = '') => `<div class="ill ${cls}">${ic(icon)}</div><svg class="wm ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[icon] || ''}</svg>`;
 const emptyBox = (icon, title, text, btn, act, extra = '') => `<div class="empty"><div class="eic">${ic(icon, 'l')}</div><b>${esc(title)}</b><span>${esc(text)}</span>${btn ? `<button class="btn pri sm" data-act="${act}" ${extra}>${ic('plus', 's')} ${esc(btn)}</button>` : ''}</div>`;
 const pbar = (p, cls = '') => `<div class="pbar ${cls}"><i style="width:${clamp(p, 0, 100)}%"></i></div>`;
 const cardHead = (title, extra = '') => `<div class="ch"><span class="ttl">${title}</span><span class="grow"></span>${extra}</div>`;
@@ -1382,10 +1552,10 @@ const S = {
 const MONTH_PAGES = ['home', 'fin', 'cartoes', 'agenda'];
 const TITLES = { apt: 'Apartamento', fit: 'Fitness', saude: 'Saúde', metas: 'Metas', docs: 'Documentos', renda: 'Minha renda', cats: 'Categorias', config: 'Configurações' };
 const NAV = [
-  ['home', 'Visão geral', 'dash'], ['fin', 'Finanças', 'wallet'], ['apt', 'Apartamento', 'building'], ['fit', 'Fitness', 'dumbbell'], ['saude', 'Saúde', 'heart'],
+  ['home', 'Visão geral', 'dash'], ['fin', 'Finanças', 'wallet'], ['apt', 'Apartamento', 'building'], ['fit', 'Fitness', 'dumbbell'], ['saude', 'Saúde', 'heartpulse'],
   ['agenda', 'Agenda', 'calendar'], ['metas', 'Metas', 'target'], ['docs', 'Documentos', 'file'],
 ];
-const NAV2 = [['renda', 'Minha renda', 'money'], ['cartoes', 'Cartões', 'card'], ['cats', 'Categorias', 'tag'], ['config', 'Configurações', 'sliders']];
+const NAV2 = [['renda', 'Minha renda', 'money'], ['cartoes', 'Cartões', 'card'], ['cats', 'Categorias', 'tag'], ['config', 'Configurações', 'gear']];
 
 /** avatar do perfil: foto (se houver) ou a inicial — mesmo tamanho/posição de sempre */
 function avatarInner(letter) { const p = D().settings.photo; return p ? `<img src="${esc(p)}" alt="Foto de perfil">` : esc(letter); }
@@ -1474,7 +1644,7 @@ function cPagar(b) {
   const nt = next ? (() => { const df = daysBetween(todayISO(), next.date); return df < 0 ? `atrasada há ${-df} dia${df === -1 ? '' : 's'}` : df === 0 ? 'próxima vence hoje' : `próxima em ${df} dia${df === 1 ? '' : 's'}`; })() : '';
   const chips = days.length ? `<div class="chips mt12"><button class="daychip ${S.payDay == null ? 'on' : ''}" data-act="payDay" data-v="">Todas<small>${pend.length}</small></button>${days.map(dy => `<button class="daychip ${S.payDay === dy ? 'on' : ''}" data-act="payDay" data-v="${dy}">${pad(dy)}<small>${'•'.repeat(Math.min(5, pend.filter(i => i.day === dy).length))}</small></button>`).join('')}</div>` : '';
   const body = outs.length ? `<div class="pay-scroll list">${list.map(payRow).join('')}</div>` : emptyBox('receipt', 'Nenhuma conta neste mês', 'Cadastre contas para acompanhar vencimentos.', 'Nova conta', 'add', 'data-v="bill"');
-  return `<section class="card s4 r2 c-pagar">${illus('calendar', 'a')}<div class="ch"><span class="ttl">Contas a pagar</span></div>
+  return `<section class="card s4 r2 c-pagar">${illus('cashcal')}<div class="ch"><span class="ttl">Contas a pagar</span></div>
   <div class="mt12">${bigMoney(b.outs.filter(i => !i.paid).reduce((s, i) => s + i.val, 0), 'mid tnum')}</div>
   <div class="lbl mt4">${outs.length ? `${outs.length - pend.length} de ${outs.length} pagas${nt ? ' · ' + nt : ''}` : 'Nenhuma conta cadastrada'}</div>
   ${chips}${body}</section>`;
@@ -1527,9 +1697,9 @@ function dueIn(iso) { if (!iso) return ''; const df = daysBetween(todayISO(), is
 
 function cObra() {
   const a = aptStats();
-  if (!a.info) return `<section class="card s8">${illus('hat', 'a')}<div class="ch"><span class="ttl">Obra</span></div>${emptyBox('building', 'Nenhum apartamento cadastrado', 'Cadastre seu apartamento para acompanhar a obra.', 'Cadastrar apartamento', 'aptInfo')}</section>`;
+  if (!a.info) return `<section class="card s8">${illus('hat', 'k')}<div class="ch"><span class="ttl">Obra</span></div>${emptyBox('building', 'Nenhum apartamento cadastrado', 'Cadastre seu apartamento para acompanhar a obra.', 'Cadastrar apartamento', 'aptInfo')}</section>`;
   const ph = PHASES.map(p => `<div class="ph"><div class="rowf"><span class="ellip">${p}</span><b>${a.phases[p] || 0}%</b></div>${pbar(a.phases[p] || 0, (a.phases[p] || 0) >= 100 ? 'gr' : '')}</div>`).join('');
-  return `<section class="card s8">${illus('hat', 'a')}<div class="ch"><span class="ttl">Obra <small>${esc(a.info.name || 'Apartamento')}</small></span></div>
+  return `<section class="card s8">${illus('hat', 'k')}<div class="ch"><span class="ttl">Obra <small>${esc(a.info.name || 'Apartamento')}</small></span></div>
   <div class="rowf mt12" style="align-items:flex-start;gap:26px;flex-wrap:wrap">
    <div style="width:120px;flex:none;margin-top:-4px">${buildingSVG(a.pctObra)}</div>
    <div class="grow" style="min-width:240px">
@@ -1587,7 +1757,7 @@ function evRow(e) {
 }
 function cAgenda() {
   const d = D(), T = todayISO(), up = d.events.filter(e => e.date >= T).sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''))).slice(0, 4);
-  return `<section class="card s6">${illus('calendar', 'r')}<div class="ch"><span class="ttl">Agenda</span></div>
+  return `<section class="card s6">${illus('calendar', 'a')}<div class="ch"><span class="ttl">Agenda</span></div>
   ${up.length ? `<div class="mt12">${up.map(evRow).join('')}</div><div class="rowf mt12"><button class="btn sm" data-act="nav" data-p="agenda">Abrir agenda ${ic('right', 's')}</button></div>` : emptyBox('calendar', 'Nenhum compromisso próximo', 'Adicione eventos, consultas e lembretes.', 'Novo evento', 'add', 'data-v="event"')}</section>`;
 }
 function docIcon(d) { return /^image\//.test(d.type || '') ? 'image' : 'file'; }
@@ -1636,7 +1806,7 @@ function vFin() {
   b.outs.forEach(i => { const o = cats[i.cat] || (cats[i.cat] = { c: catOf(i.cat), v: 0 }); o.v += i.val; });
   const cl = Object.values(cats).sort((a, c) => c.v - a.v);
   return `<div class="grid">${cSaldo(b, 's8')}
-  <section class="card s4">${illus('wallet')}<div class="ch"><span class="ttl">Reserva</span></div><div class="lbl mt12">Saldo acumulado</div><div class="mt4">${bigMoney(reserveBal(), 'mid tnum')}</div><div class="lbl mt8">${R(b.g.reserva)} reservados em ${MONTHS[+S.ym.slice(5) - 1].toLowerCase()}</div><div class="grow"></div><div class="rowf mt16"><button class="btn sm" data-act="reserve">Ajustar saldo inicial</button></div></section>
+  <section class="card s4">${illus('safe', 'g')}<div class="ch"><span class="ttl">Reserva</span></div><div class="lbl mt12">Saldo acumulado</div><div class="mt4">${bigMoney(reserveBal(), 'mid tnum')}</div><div class="lbl mt8">${R(b.g.reserva)} reservados em ${MONTHS[+S.ym.slice(5) - 1].toLowerCase()}</div><div class="grow"></div><div class="rowf mt16"><button class="btn sm" data-act="reserve">Ajustar saldo inicial</button></div></section>
   <section class="card s12"><div class="rowf wrap between mb8"><span class="ttl">Lançamentos de ${MONTHS[+S.ym.slice(5) - 1].toLowerCase()}</span><div class="rowf wrap"><button class="btn sm" data-act="add" data-v="bill">${ic('plus', 's')} Nova conta</button><button class="btn sm pri" data-act="add" data-v="tx">${ic('plus', 's')} Novo lançamento</button></div></div>
   <div class="rowf wrap between mt8"><div class="tabs" style="max-width:100%;overflow-x:auto">${tabs.map(([k, l]) => `<button class="${S.finTab === k ? 'on' : ''}" data-act="finTab" data-v="${k}">${l}</button>`).join('')}</div>
    <div class="rowf wrap"><select class="inp" style="width:auto;padding:7px 32px 7px 12px" data-act="finCat" aria-label="Filtrar categoria"><option value="">Todas as categorias</option>${d.cats.map(c => `<option value="${c.id}" ${S.finCat === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select><label class="search"><span>${ic('search', 's')}</span><input id="finQ" placeholder="Buscar lançamento" value="${esc(S.finQ)}"></label></div></div>
@@ -3470,7 +3640,7 @@ function dailyCard(type, title, unit, color) {
 }
 function saudeAppleBody() {
   const d = D(), ims = d.imports.slice().sort((a, b) => b.importedAt.localeCompare(a.importedAt));
-  return `<div class="grid"><section class="card s12">${illus('heart', 'r')}<div class="ch"><span class="ttl">Apple Saúde</span></div><div class="lbl">Importe relatórios (PDF), o export.xml, CSV/JSON ou cole os dados. Os registros importados ficam somente leitura e nunca são alterados.</div><div class="rowf wrap mt16"><button class="btn pri sm" data-act="impMenu">${ic('upload', 's')} Importar dados de Saúde</button></div></section>
+  return `<div class="grid"><section class="card s12">${illus('heartpulse', 'r')}<div class="ch"><span class="ttl">Apple Saúde</span></div><div class="lbl">Importe relatórios (PDF), o export.xml, CSV/JSON ou cole os dados. Os registros importados ficam somente leitura e nunca são alterados.</div><div class="rowf wrap mt16"><button class="btn pri sm" data-act="impMenu">${ic('upload', 's')} Importar dados de Saúde</button></div></section>
   <section class="card s12"><div class="ch"><span class="ttl">Importações feitas <small>${ims.length}</small></span></div>${ims.length ? `<div class="tbl-w mt8"><table class="tbl"><thead><tr><th>Arquivo</th><th>Categorias</th><th>Período</th><th class="r">Registros</th><th>Importado em</th><th></th></tr></thead><tbody>${ims.map(i => `<tr><td><b class="fw6">${esc(i.fileName)}</b></td><td class="xs">${esc((i.type || '').split(',').map(t => TYPE_L[t] || t).join(', '))}</td><td class="xs">${i.period ? i.period.split('/').map(fdate).join(' a ') : '—'}</td><td class="r tnum">${sum(Object.values(i.counts || {}))}</td><td class="xs">${fdate((i.importedAt || '').slice(0, 10))}</td><td class="r"><button class="btn sm gh dng" data-act="undoImport" data-id="${i.id}">Desfazer</button></td></tr>`).join('')}</tbody></table></div>` : emptyBox('upload', 'Nenhuma importação ainda', 'Importe seus dados do Apple Saúde para acompanhar passos, calorias, frequência cardíaca, sono e composição corporal.')}</section>
   ${dailyCard('passos', 'Passos', 'passos', 'var(--bl)')}${dailyCard('calorias', 'Calorias ativas', 'kcal', 'var(--am)')}${dailyCard('fc', 'Frequência cardíaca média', 'bpm', 'var(--rd)')}${dailyCard('sono', 'Sono', 'h', 'var(--g-reserva)')}
   ${typeof appleActivitiesCard === 'function' ? appleActivitiesCard() : ''}</div>`;
@@ -3724,7 +3894,7 @@ function secCuryCaixa() {
   const byYear = {}; a.cxPaid.forEach(p => (byYear[p.due.slice(0, 4)] = byYear[p.due.slice(0, 4)] || []).push(p));
   const est = a.cxNext ? { due: addMonthsISO(a.cxNext.due, 1), val: a.cxNext.val, estimate: true } : null;
   const g = d.apt.amortGoal, gm = g ? Math.max(0, Math.round(daysBetween(T, g.date) / 30.4)) : 0, gRest = g ? Math.max(0, r2(g.target - (g.saved || 0))) : 0;
-  const imovel = `<section class="card s6">${illus('home', 'k')}<div class="ch"><span class="ttl">Valor do imóvel e financiamento</span></div>
+  const imovel = `<section class="card s6">${illus('homecoin', 'k')}<div class="ch"><span class="ttl">Valor do imóvel e financiamento</span></div>
    <div class="lbl mt12">Valor do imóvel</div><div class="mt4">${a.value ? bigMoney(a.value, 'mid tnum') : '<span class="mid">Não informado</span>'}</div><div class="lbl mt4">${esc(valSrc(a.info) || 'Informe o valor em "Editar dados"')}</div>
    <div class="mk">Financiamento CAIXA</div><div class="mt8">${kvRow('Valor financiado', Rn(a.financed || null))}${kvRow('Percentual financiado', pctN(a.caixaPct))}${kvRow('Parte não financiada', Rn(a.unfin))}${kvRow('Percentual não financiado', pctN(a.unfinPct))}</div>
    ${a.caixaPct != null ? `<div class="seg mt12" role="img" aria-label="Financiado ${N(a.caixaPct, 1)}%"><i style="flex:${a.caixaPct} 1 0;background:var(--g-cartao)"></i><i style="flex:${Math.max(a.unfinPct, 0.001)} 1 0;background:var(--g-sobra)"></i></div>` : ''}
